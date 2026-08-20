@@ -1,6 +1,7 @@
 const { getAction } = require('../lib/apps-script');
 
 const DRIVE_ID_RE = /^[A-Za-z0-9_-]{10,}$/;
+const TOURNAMENT_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
 
 function driveId(value) {
   const text = String(value || '').trim();
@@ -14,6 +15,30 @@ function driveId(value) {
 function mediaUrl(value) {
   const id = driveId(value);
   return id ? `/media/trophy/${id}` : value;
+}
+
+function setImageHeaders(res, type, length, cacheSeconds = 604800) {
+  res.setHeader('Content-Type', type.startsWith('image/') ? type : 'image/jpeg');
+  res.setHeader('Content-Length', String(length));
+  res.setHeader('Cache-Control', `public, max-age=86400, s-maxage=${cacheSeconds}, stale-while-revalidate=2592000`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, s-maxage=${cacheSeconds}, stale-while-revalidate=2592000`);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+}
+
+async function fetchImage(url, userAgent) {
+  const upstream = await fetch(url, {
+    redirect: 'follow',
+    headers: {
+      Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8',
+      'User-Agent': userAgent,
+    },
+  });
+  if (!upstream.ok) throw new Error(`El proveedor de imagen respondió ${upstream.status}.`);
+  const type = String(upstream.headers.get('content-type') || '').toLowerCase();
+  if (!type.startsWith('image/')) throw new Error('El proveedor no devolvió una imagen.');
+  const bytes = Buffer.from(await upstream.arrayBuffer());
+  if (!bytes.length) throw new Error('La imagen llegó vacía.');
+  return { type, bytes };
 }
 
 async function serveTrophy(id, res) {
@@ -30,35 +55,8 @@ async function serveTrophy(id, res) {
   let lastError = null;
   for (const url of candidates) {
     try {
-      const upstream = await fetch(url, {
-        redirect: 'follow',
-        headers: {
-          Accept: 'image/avif,image/webp,image/*,*/*;q=0.8',
-          'User-Agent': 'Mozilla/5.0 GMAC-Trophy-Proxy/1.0',
-        },
-      });
-      if (!upstream.ok) {
-        lastError = new Error(`Drive respondió ${upstream.status}`);
-        continue;
-      }
-
-      const type = String(upstream.headers.get('content-type') || '').toLowerCase();
-      if (type.includes('text/html') || type.includes('application/json')) {
-        lastError = new Error('Drive devolvió una página en lugar de la imagen.');
-        continue;
-      }
-
-      const bytes = Buffer.from(await upstream.arrayBuffer());
-      if (!bytes.length) {
-        lastError = new Error('La copa llegó vacía desde Drive.');
-        continue;
-      }
-
-      res.setHeader('Content-Type', type.startsWith('image/') ? type : 'image/avif');
-      res.setHeader('Content-Length', String(bytes.length));
-      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000');
-      res.setHeader('Vercel-CDN-Cache-Control', 'public, s-maxage=604800, stale-while-revalidate=2592000');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
+      const { type, bytes } = await fetchImage(url, 'Mozilla/5.0 GMAC-Trophy-Proxy/1.0');
+      setImageHeaders(res, type, bytes.length);
       return res.status(200).send(bytes);
     } catch (error) {
       lastError = error;
@@ -66,6 +64,55 @@ async function serveTrophy(id, res) {
   }
 
   return res.status(502).json({ message: lastError?.message || 'No se pudo cargar la copa desde Drive.' });
+}
+
+function safeRemoteImageUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    if (url.protocol !== 'https:') return null;
+    const host = url.hostname.toLowerCase();
+    if (
+      host === 'localhost' || host.endsWith('.local') || host === '0.0.0.0' || host === '::1' ||
+      /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+    ) return null;
+    return url.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+async function championPhotoFor(tournamentId) {
+  const winnersData = await getAction('winners', {}).catch(() => ({ winners: [] }));
+  const winner = (winnersData.winners || []).find((item) => String(item.tournamentId || '') === tournamentId);
+  if (winner?.winnerPhoto) return String(winner.winnerPhoto).trim();
+
+  const tournamentData = await getAction('tournaments', {}).catch(() => ({ tournaments: [] }));
+  const tournament = (tournamentData.tournaments || []).find((item) => String(item.id || '') === tournamentId);
+  return String(tournament?.championCover || '').trim();
+}
+
+async function serveChampion(tournamentId, res) {
+  if (!TOURNAMENT_ID_RE.test(tournamentId)) {
+    return res.status(400).json({ message: 'ID de torneo inválido.' });
+  }
+
+  try {
+    const source = await championPhotoFor(tournamentId);
+    if (!source) return res.status(404).json({ message: 'Esta edición todavía no tiene foto de campeón.' });
+
+    const id = driveId(source);
+    if (id) return serveTrophy(id, res);
+
+    const safeUrl = safeRemoteImageUrl(source);
+    if (!safeUrl) return res.status(400).json({ message: 'La URL de la foto del campeón no es válida.' });
+
+    const { type, bytes } = await fetchImage(safeUrl, 'Mozilla/5.0 GMAC-Champion-Proxy/1.0');
+    setImageHeaders(res, type, bytes.length, 86400);
+    return res.status(200).send(bytes);
+  } catch (error) {
+    return res.status(502).json({ message: error.message || 'No se pudo cargar la foto del campeón.' });
+  }
 }
 
 module.exports = async (req, res) => {
@@ -76,6 +123,9 @@ module.exports = async (req, res) => {
 
   if (req.query.asset) {
     return serveTrophy(String(req.query.asset), res);
+  }
+  if (req.query.champion) {
+    return serveChampion(String(req.query.champion), res);
   }
 
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -99,7 +149,8 @@ module.exports = async (req, res) => {
       const trophyCover = mediaUrl(t.trophyCover || t.trophy || '');
       const trophyFixture = mediaUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
       const winnerRecord = winnerByTournament.get(String(t.id || '')) || {};
-      const championCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
+      const rawChampionCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
+      const championCover = rawChampionCover ? `/media/champion/${encodeURIComponent(String(t.id || ''))}` : '';
       return {
         ...t,
         game: t.game || game,
