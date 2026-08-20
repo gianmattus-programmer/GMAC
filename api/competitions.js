@@ -1,0 +1,1 @@
+const{getAction}=require('../lib/apps-script');module.exports=async(req,res)=>{if(req.method!=='GET')return res.status(405).json({message:'Método no permitido.'});try{const data=await getAction('competitions',{game:req.query.game||''});return res.status(200).json({competitions:data.competitions||[]})}catch(e){return res.status(503).json({message:e.message})}};
