@@ -3,6 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/media/trophy/:id", "destination": "/api/tournaments?asset=:id" },
     { "source": "/api/admin/:action", "destination": "/api/admin?action=:action" }
   ],
   "headers": [
