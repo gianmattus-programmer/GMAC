@@ -86,16 +86,27 @@ module.exports = async (req, res) => {
 
   try {
     const game = req.query.game || '';
-    const data = await getAction('tournaments', { game });
+    const [data, winnersData] = await Promise.all([
+      getAction('tournaments', { game }),
+      getAction('winners', { game }).catch(() => ({ winners: [] })),
+    ]);
+
+    const winnerByTournament = new Map(
+      (winnersData.winners || []).map((winner) => [String(winner.tournamentId || ''), winner])
+    );
+
     const tournaments = (data.tournaments || []).map((t) => {
       const trophyCover = mediaUrl(t.trophyCover || t.trophy || '');
       const trophyFixture = mediaUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
+      const winnerRecord = winnerByTournament.get(String(t.id || '')) || {};
+      const championCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
       return {
         ...t,
         game: t.game || game,
         trophyCover,
         trophyFixture,
         trophy: trophyCover,
+        championCover,
       };
     });
     return res.status(200).json({ tournaments });
