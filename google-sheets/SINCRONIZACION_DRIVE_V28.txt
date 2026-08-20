@@ -1,0 +1,8 @@
+GMAC V28 — Sincronización Drive corregida
+
+- COMPETICIONES usa las columnas copa_portada_file_id, copa_fixture_file_id, copa_portada_url y copa_fixture_url.
+- La sincronización ahora indexa las 5 carpetas de AVIF una sola vez y escribe las 4 columnas en bloque.
+- Ya no depende de buscar archivo por archivo con getFilesByName.
+- El menú incluye Diagnóstico biblioteca de copas.
+- El Google Sheet nativo fue corregido a zona horaria America/Lima.
+- TORNEOS puede heredar las referencias Drive de COMPETICIONES.
