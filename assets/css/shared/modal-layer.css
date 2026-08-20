@@ -1,0 +1,19 @@
+/* GMAC V16 — modal de inscripción por encima de toda la interfaz.
+   No modifica colores, medidas ni layout del fixture/torneo. */
+body.gmac-menu-page .gm-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9999!important;
+  width:100vw!important;
+  height:100dvh!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:clamp(8px,2vw,24px)!important;
+  background:rgba(21,21,21,.82)!important;
+  -webkit-backdrop-filter:blur(10px)!important;
+  backdrop-filter:blur(10px)!important;
+  isolation:isolate;
+}
+body.gmac-menu-page .gm-modal.is-open{display:flex!important}
+body.gmac-menu-page .gm-modal__dialog{position:relative;z-index:1}
+@media(max-width:560px){body.gmac-menu-page .gm-modal{padding:8px!important}}

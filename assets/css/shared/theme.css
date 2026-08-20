@@ -1,0 +1,249 @@
+/* ========================================================================== */
+/* GIANMATTUS V11 — TEMA LOCAL MINIMALISTA                                  */
+/* Solo apariencia. No altera layout, grids, widths, heights ni positioning. */
+/* ========================================================================== */
+
+:root{
+  /* Paleta Arena Gianmattus */
+  --gm-green:#d6d4ce;
+  --gm-dark:#151515;
+  --gm-dark2:#262625;
+  --gm-cream:#f5f3ed;
+  --gm-ink:#151515;
+  --gm-white:#fbfaf6;
+  --gm-pink:#e7e3da;
+  --gm-line:rgba(21,21,21,.24);
+
+  --gm-home-bg:#d6d4ce;
+  --gm-home-ink:#151515;
+  --gm-home-paper:#f5f3ed;
+  --gm-home-blue:#315fd6;
+  --gm-home-red:#d94a4a;
+  --gm-home-green:#19835f;
+
+  /* Variables de la plantilla del Inicio: color solamente. */
+  --color-primary:#151515!important;
+  --color-primary-dark:#272726!important;
+  --color-secondary:#d6d4ce!important;
+  --color-secondary-dark:#aaa79f!important;
+  --color-light:#f5f3ed!important;
+  --color-light-dark:#e7e3da!important;
+  --color-dark:#151515!important;
+  --color-dark-light:#2b2b2a!important;
+  --color-gray:#d6d4ce!important;
+  --color-white:#f5f3ed!important;
+}
+
+::selection{background:#315fd6;color:#fff;}
+
+/* -------------------------------------------------------------------------- */
+/* INICIO — misma estructura, nueva identidad plana                           */
+/* -------------------------------------------------------------------------- */
+body.body .main>.side,
+body.body .main>.side .side__content,
+body.body .nav-mobile,
+body.body .nav-side,
+body.body .nav-mobile .side__content{
+  background:#f5f3ed!important;
+  color:#151515!important;
+}
+
+body.body .side__border{background:#aaa79f!important;}
+body.body .gm-index-new{color:#d94a4a!important;}
+
+/* CTA sólidos: el azul es el acento principal; negro queda como apoyo. */
+body.body .side__row-catalogue .btn__back-svg path{
+  fill:#315fd6!important;
+  stroke:#315fd6!important;
+}
+body.body .side__row-catalogue .btn{color:#fff!important;}
+body.body .side__row-meet .btn__back-svg path{
+  fill:#e7e3da!important;
+  stroke:#e7e3da!important;
+}
+body.body .side__row-meet .btn-icon,
+body.body .side__row-meet svg{color:#19835f!important;}
+
+/* Redes y perfiles: superficies planas, sin glow. */
+body.body .gm-community-profile,
+body.body .gm-community-network-card,
+body.body .gm-network-profile,
+body.body .gm-game-account-link,
+body.body .gm-modal-profile{
+  box-shadow:none!important;
+}
+body.body .gm-community-profile,
+body.body .gm-community-network-card,
+body.body .gm-network-profile,
+body.body .gm-game-account-link{
+  border-radius:10px;
+}
+
+/* Copas y carrusel: eliminar brillos sin ocultar ni redimensionar nada. */
+body.body .catalogue-slide__img,
+body.body .catalogue-slide__img img,
+body.body .catalogue-slide__img svg{
+  filter:none!important;
+  text-shadow:none!important;
+}
+body.body .catalogue-slider__shadow,
+body.body .catalogue-slider__fade{
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+/* Feedback flotante, plano. */
+body.body .gm-share-toast{box-shadow:none!important;}
+
+
+/* Contraste del Inicio: las secciones oscuras usan tinta clara.
+   Se limita a [data-theme-section="dark"] para no invertir el footer ni la barra lateral clara. */
+body.body .main-wrap [data-theme-section="dark"]{
+  --color-primary:#f5f3ed!important;
+  --color-primary-dark:#c8c6bf!important;
+  --color-light:#f5f3ed!important;
+  --color-light-dark:#d8d5ce!important;
+  --color-white:#fbfaf6!important;
+  color:#f5f3ed!important;
+}
+
+/* Textos editoriales del Inicio: evita negro accidental sobre fondos carbón. */
+body.body .main-wrap [data-theme-section="dark"] :is(
+  h1,h2,h3,h4,h5,h6,p,li,blockquote,
+  .text-size-small,.text-size-regular,.text-size-medium,.text-size-large,
+  .eyebrow,.subtitle,.label,.caption
+){
+  color:inherit;
+}
+
+/* Gris claro para textos secundarios dentro de las secciones oscuras. */
+body.body .main-wrap [data-theme-section="dark"] :is(small,.text-color-muted,.text-color-gray){
+  color:#c8c6bf!important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* PÁGINAS DE TORNEOS — misma retícula y responsive                           */
+/* -------------------------------------------------------------------------- */
+.gm-page{background:#d6d4ce;color:#151515;}
+.gm-page .gm-main{background:#151515;}
+.gm-page .gm-side{background:#f5f3ed;border-color:#aaa79f;}
+.gm-page .gm-side__nav a b{background:#151515;color:#f5f3ed;}
+.gm-page .gm-side__socials span{background:#151515;color:#f5f3ed;}
+
+.gm-page .gm-tournament-hero,
+.gm-page .gm-detail-hero{background:#d6d4ce;color:#151515;}
+.gm-page .gm-section--green,
+.gm-page .gm-section--editions,
+.gm-page .gm-section--detail-winner{background:#d6d4ce;color:#151515;}
+.gm-page .gm-section--cream{background:#f5f3ed;color:#151515;}
+.gm-page .gm-section--dark,
+.gm-page .gm-section--archive{background:#151515;color:#f5f3ed;}
+.gm-page .gm-footer{background:#151515;color:#f5f3ed;}
+.gm-page .gm-next{background:#e7e3da;color:#151515;}
+
+/* Tarjetas: tonos cálidos, planos y consistentes. */
+.gm-page .gm-card{background:#e7e3da;border-color:#151515;border-radius:12px;}
+.gm-page .gm-card:nth-child(3n+2){background:#f5f3ed;transform:none;}
+.gm-page .gm-card:nth-child(3n+3){background:#d6d4ce;transform:none;}
+.gm-page .gm-rule-feature,
+.gm-page .gm-rule-list,
+.gm-page .gm-detail-feature-grid article,
+.gm-page .gm-edition-card,
+.gm-page .gm-completed-card,
+.gm-page .gm-winner-card,
+.gm-page .gm-media-empty,
+.gm-page .gm-editions-empty{
+  border-radius:12px;
+  box-shadow:none!important;
+}
+
+/* Botones principales: azul sólido. Los secundarios continúan neutros. */
+.gm-page a.gm-sketch-btn--dark,
+.gm-page button.gm-sketch-btn--dark{
+  background:#315fd6;
+  color:#fff!important;
+}
+.gm-page .gm-sketch-btn--green{background:#e7e3da;color:#151515;border-color:#151515;}
+.gm-page .gm-sketch-btn--light{background:#f5f3ed;color:#151515;}
+.gm-page .gm-side-btn--dark{background:#151515;color:#f5f3ed!important;}
+.gm-page .gm-side-btn--light{background:#e7e3da;color:#151515!important;}
+
+/* Estados: color únicamente cuando comunica información. */
+.gm-page .gm-status--vigente{background:#19835f!important;color:#fff!important;border-color:#19835f!important;}
+.gm-page .gm-status--proximamente{background:#d4a62a!important;color:#151515!important;border-color:#d4a62a!important;}
+.gm-page .gm-status--finalizado{background:#454545!important;color:#fff!important;border-color:#454545!important;}
+
+/* Copas sin drop-shadow / glow. */
+.gm-page .gm-card__cup,
+.gm-page .gm-card__cup img,
+.gm-page .gm-detail-trophy-card img,
+.gm-page .gm-winner-cup img,
+.gm-page .gm-fixture-cup img{
+  filter:none!important;
+}
+
+/* Contenedores de trofeos planos, pero conservando tamaño y posición. */
+.gm-page .gm-detail-trophy-card,
+.gm-page .gm-winner-card,
+.gm-page .gm-completed-card,
+.gm-page .gm-edition-card,
+.gm-page .gm-modal__dialog{
+  box-shadow:none!important;
+}
+.gm-page .gm-detail-trophy-card{border-radius:12px;transform:none;}
+.gm-page .gm-winner-card{border-radius:12px;}
+
+/* Eliminación específica de degradados decorativos. */
+.gm-page .gm-completed-card__placeholder{background:#262625;}
+.gm-page .gm-dashline{
+  background:none;
+  border-top:1px solid rgba(21,21,21,.35);
+}
+
+/* Modal sin blur/brillo; mantiene su posición y medidas originales. */
+.gm-page .gm-modal{backdrop-filter:none;background:rgba(21,21,21,.82);}
+.gm-page .gm-modal__dialog{background:#f5f3ed;color:#151515;border-color:#151515;border-radius:12px;}
+.gm-page .gm-field input,
+.gm-page .gm-field select{background:#fbfaf6;color:#151515;border-color:#151515;border-radius:8px;}
+.gm-page .gm-field input:focus{box-shadow:none!important;outline:2px solid #315fd6;outline-offset:1px;}
+.gm-page .gm-close{background:#e7e3da;color:#151515;border-color:#151515;}
+
+/* Fixture y controles: contraste limpio. */
+.gm-page .gm-fixture-panel{background:#202020;color:#f5f3ed;border-color:#444;border-radius:12px;}
+.gm-page .gm-fixture-match{background:#292929;border-color:#555;border-radius:8px;}
+.gm-page .gm-fixture-player.is-registered{background:#f5f3ed;color:#151515;}
+.gm-page .gm-result-controls{background:#202020;}
+
+/* Detalles manuscritos pasan a sans, sin tocar su caja. */
+.gm-page .gm-hand,
+.gm-page .gm-new-badge{
+  font-family:var(--font-sans);
+  font-style:normal;
+  letter-spacing:.05em;
+  transform:none;
+}
+
+/* Accesibilidad y movimiento: conservar interacciones, sin efectos luminosos. */
+.gm-page :focus-visible,
+body.body :focus-visible{outline-color:#315fd6;}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+}
+
+/* Limpieza final de sombras/blur decorativos detectados en la base original. */
+.gm-page .gm-side,
+.gm-page .gm-capture-preview__panel{box-shadow:none!important;}
+.gm-page .gm-capture-preview__backdrop{backdrop-filter:none!important;}
+.gm-page .gm-side__nav a:hover span{text-shadow:none!important;-webkit-text-stroke:0;}
+body.body .modal .modal__blur{backdrop-filter:none!important;}
+body.body .side__row-nav .nav-btn:hover .nav-btn__p{text-shadow:none!important;}
+body.body .gm-community-profile--organizer img{filter:none!important;}
+
+/* Sustituye overlays degradados por una placa plana para conservar legibilidad. */
+@media(max-width:767px){
+  body.body .gm-community-profile--organizer>span,
+  body.body .gm-modal-profile--organizer>span{
+    background:rgba(21,21,21,.86)!important;
+  }
+}

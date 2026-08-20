@@ -1,0 +1,127 @@
+
+/* GMAC V15 — menú global único para todas las páginas */
+:root{
+  --gmac-menu-rail:244px;
+  --gmac-menu-bg:#0d0e0f;
+  --gmac-menu-surface:#151617;
+  --gmac-menu-line:#2b2c2f;
+  --gmac-menu-line-soft:#37383b;
+  --gmac-menu-text:#f3f2ee;
+  --gmac-menu-muted:#8e8e8a;
+  --gmac-menu-blue:#315fd6;
+}
+.desktop-rail{
+  position:fixed;inset:0 auto 0 0;z-index:210;width:var(--gmac-menu-rail);
+  min-height:100vh;height:100dvh;padding:24px 18px 18px;display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:var(--gmac-menu-bg);
+  color:var(--gmac-menu-text);border-right:1px solid var(--gmac-menu-line);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+.desktop-rail::-webkit-scrollbar{display:none}
+.rail-brand{padding:0 8px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--gmac-menu-line);color:inherit;text-decoration:none}
+.rail-brand img{width:58px;height:38px;object-fit:contain;filter:invert(1)}
+.rail-brand span{display:grid;line-height:1}.rail-brand strong{font-size:17px;letter-spacing:.12em}.rail-brand small{margin-top:6px;color:#aaa9a4;font-size:7px;letter-spacing:.15em}
+.rail-nav{margin-top:22px;display:grid}
+.rail-nav a{min-height:48px;padding:0 9px;display:grid;grid-template-columns:28px 1fr;align-items:center;border-bottom:1px solid #202124;color:var(--gmac-menu-muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;transition:color .16s ease,background .16s ease}
+.rail-nav a span{color:#55565a;font-size:8px}.rail-nav a:hover,.rail-nav a.is-active{color:var(--gmac-menu-text);background:var(--gmac-menu-surface)}.rail-nav a.is-active span{color:var(--gmac-menu-blue)}
+
+/* accesos directos a los torneos por juego */
+.rail-games{padding:16px 8px 0;display:grid;gap:7px}
+.rail-games__label{margin:0 0 3px;color:#616267;font-size:7px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.rail-game-link{height:43px;padding:8px 11px;display:flex;align-items:center;justify-content:center;border:1px solid #242528;border-radius:6px;background:#101112;text-decoration:none;transition:background .16s ease,border-color .16s ease}
+.rail-game-link img{display:block;width:auto;max-width:135px;max-height:20px;object-fit:contain;filter:invert(1);opacity:.62;transition:opacity .16s ease}
+.rail-game-link:hover,.rail-game-link.is-current{background:#171819;border-color:#3a3b3f}.rail-game-link:hover img,.rail-game-link.is-current img{opacity:1}
+.rail-game-link.is-current{box-shadow:inset 2px 0 0 var(--gmac-menu-blue)}
+
+.rail-bottom{margin-top:auto;padding:18px 8px 0;border-top:1px solid var(--gmac-menu-line);display:grid;gap:15px}
+.rail-organizers{display:grid;grid-template-columns:32px 32px 1fr;align-items:center}.rail-organizers img{width:32px;height:32px;object-fit:cover;border-radius:50%;border:2px solid var(--gmac-menu-bg)}.rail-organizers img+img{margin-left:-7px}.rail-organizers span{margin-left:8px;display:grid}.rail-organizers b{color:var(--gmac-menu-text);font-size:8px;letter-spacing:.04em}.rail-organizers small,.rail-bottom>small{color:#666762;font-size:7px;letter-spacing:.1em}
+.rail-contact{padding:11px 12px;display:flex;justify-content:space-between;border:1px solid var(--gmac-menu-line-soft);border-radius:7px;color:var(--gmac-menu-text);font-size:9px;font-weight:850;letter-spacing:.1em;text-decoration:none}.rail-contact:hover{background:#ecebe6;color:#111214;border-color:#ecebe6}
+
+/* La home ya usa .page-frame; las páginas internas usan .gm-main. */
+.page-frame{margin-left:var(--gmac-menu-rail);min-width:0}
+body.gmac-menu-page>.gm-main,body.gmac-menu-page .gm-main{margin-left:var(--gmac-menu-rail)!important;width:calc(100% - var(--gmac-menu-rail))!important;max-width:calc(100% - var(--gmac-menu-rail))!important;min-width:0!important}
+.mobile-header{display:none}
+
+@media (max-width:1180px) and (min-width:981px){
+  :root{--gmac-menu-rail:220px}.rail-nav a{grid-template-columns:24px 1fr}.rail-organizers span{display:none}.rail-organizers{grid-template-columns:32px 32px}
+}
+@media (max-width:980px){
+  :root{--gmac-menu-rail:0px}.desktop-rail{display:none!important}.page-frame{margin-left:0!important}
+  body.gmac-menu-page>.gm-main,body.gmac-menu-page .gm-main{margin-left:0!important;width:100%!important;max-width:100%!important}
+  .mobile-header{position:sticky;top:0;z-index:220;height:72px;padding:0 20px;display:flex!important;align-items:center;justify-content:space-between;background:rgba(16,17,18,.985);color:var(--gmac-menu-text);border-bottom:1px solid var(--gmac-menu-line);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+  .mobile-brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}.mobile-brand img{width:48px;height:30px;object-fit:contain;filter:invert(1)}.mobile-brand span{display:grid;line-height:1}.mobile-brand strong{font-size:15px;letter-spacing:.11em}.mobile-brand small{margin-top:5px;color:#aaa9a4;font-size:7px;letter-spacing:.13em}
+  .mobile-menu-toggle{position:relative;z-index:2;width:42px;height:42px;padding:7px;border:1px solid var(--gmac-menu-line);border-radius:7px;background:transparent;color:var(--gmac-menu-text)}.mobile-menu-toggle>span{display:block;width:22px;height:1px;margin:6px auto;background:currentColor}
+  .mobile-menu{position:fixed;inset:72px 0 0;padding:26px 22px 34px;display:none;align-content:start;background:#101112;color:var(--gmac-menu-text);overflow:auto;z-index:219}.mobile-menu.is-open{display:grid}.mobile-menu>a{padding:16px 0;border-bottom:1px solid var(--gmac-menu-line);color:inherit;font-size:17px;font-weight:800;letter-spacing:-.02em;text-decoration:none}
+  .mobile-game-links{padding:20px 0 4px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.mobile-game-links>span{grid-column:1/-1;color:#666762;font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.mobile-game-links a{min-height:58px;padding:11px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gmac-menu-line);border-radius:7px;background:#151617}.mobile-game-links img{max-width:145px;max-height:22px;filter:invert(1);opacity:.78}.mobile-game-links a.is-current{border-color:#48494d}.mobile-game-links a.is-current img{opacity:1}
+}
+@media (max-width:480px){.mobile-game-links{grid-template-columns:1fr}.mobile-game-links>span{grid-column:1}}
+
+/* V15.1 — scroll nativo del documento.
+   El menú lateral permanece fijo; el contenido se desplaza en html/body. */
+html{overflow-x:hidden}
+body.gmac-menu-page{height:auto;min-height:100vh;max-height:none;overflow-x:hidden;overflow-y:auto;position:relative}
+body.gmac-menu-page>.gm-main,body.gmac-menu-page .gm-main{height:auto!important;min-height:100vh!important;max-height:none!important;overflow:visible!important}
+body.gmac-menu-page.menu-open{overflow:hidden}
+body.gmac-menu-page.gm-capture-open{overflow:hidden}
+body.gmac-menu-page:has(.gm-modal.is-open){overflow:hidden}
+
+/* GMAC V17 — cabecera del menú simplificada: logo grande + juegos en dos filas */
+.rail-brand{
+  gap:14px;
+  padding:0 6px 22px;
+}
+.rail-brand img{
+  width:72px;
+  height:56px;
+  flex:0 0 72px;
+  object-fit:contain;
+}
+.rail-brand-games{
+  display:grid;
+  gap:5px;
+  min-width:0;
+  line-height:1;
+}
+.rail-brand-games small{
+  margin:0;
+  color:#d2d1cc;
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:.14em;
+  white-space:nowrap;
+}
+.mobile-brand img{
+  width:58px;
+  height:42px;
+  flex:0 0 58px;
+}
+.mobile-brand-games{
+  display:grid;
+  gap:4px;
+  line-height:1;
+}
+.mobile-brand-games small{
+  margin:0;
+  color:#d2d1cc;
+  font-size:7px;
+  font-weight:850;
+  letter-spacing:.12em;
+}
+@media (max-width:1180px) and (min-width:981px){
+  .rail-brand img{width:66px;height:52px;flex-basis:66px}
+  .rail-brand-games small{font-size:7.3px}
+}
+
+/* GMAC V25 · menú móvil sin texto visible y ancho completamente estable */
+.sr-only{
+  position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;
+  overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important;
+}
+@media(max-width:980px){
+  .mobile-header{width:100%!important;max-width:100vw!important;padding-left:14px!important;padding-right:14px!important;overflow:hidden}
+  .mobile-brand{min-width:0!important;max-width:calc(100% - 54px)!important}
+  .mobile-menu-toggle{flex:0 0 42px!important;overflow:hidden!important;font-size:0!important;line-height:0!important}
+  .mobile-menu-toggle b{display:none!important}
+  .mobile-menu{width:100%!important;max-width:100vw!important;overflow-x:hidden!important}
+  body.gmac-menu-page{touch-action:pan-y;overscroll-behavior-x:none!important}
+}

@@ -1,0 +1,106 @@
+/* Gianmattus V8.11.9 - sistema SVG propio */
+
+.gm-nav-svg,.gm-action-svg,.gm-illustration-svg,.gm-social-bg-svg{shape-rendering:geometricPrecision;}
+
+/* El sprite heredado puede seguir animando: cada SVG nuevo contiene 3 fotogramas propios. */
+
+.btn-social__icon-svg{color:#f1f1f1!important;}
+
+/* Inicio: acentos controlados para cada juego. */
+
+body.body .side__row-nav [data-anchor-target="top"] .gm-icon-bg{fill:#202020!important;}
+
+body.body .side__row-nav [data-anchor-target="top"] .gm-icon-fg{fill:#f1f1f1!important;}
+
+body.body .side__row-nav [data-anchor-target="#destroyed"] .gm-icon-bg{fill:#355CDE!important;}
+
+body.body .side__row-nav [data-anchor-target="#destroyed"] .gm-icon-fg{fill:#f1f1f1!important;}
+
+body.body .side__row-nav [data-anchor-target="#your-game-plan"] .gm-icon-bg{fill:#E34C4C!important;}
+
+body.body .side__row-nav [data-anchor-target="#your-game-plan"] .gm-icon-fg{fill:#f1f1f1!important;}
+
+body.body .side__row-nav .nav-shop-link .gm-icon-bg{fill:#168B68!important;}
+
+body.body .side__row-nav .nav-shop-link .gm-icon-fg{fill:#f1f1f1!important;}
+
+/* Páginas internas: menú monocromático coherente. */
+
+.gm-page.gm-shared-menu-page .side__row-nav .gm-icon-bg{fill:#111!important;}
+
+.gm-page.gm-shared-menu-page .side__row-nav .gm-icon-fg{fill:#f1f1f1!important;}
+
+.gm-page.gm-shared-menu-page .side__row-nav .nav-btn[aria-current="page"] .gm-icon-bg{fill:#505050!important;}
+
+/* Contacto siempre se reconoce con burbuja, no con bolsa/carrito. */
+
+.gm-nav-contact-svg{overflow:visible;}
+
+/* SVG explicativos del contenido: más limpios y deportivos. */
+
+.gm-illustration-svg{color:currentColor;}
+
+/* Evita que reglas antiguas de nth-child recoloreen mal los nuevos sprites. */
+
+body.body .side__row-nav .gm-nav-svg path{stroke-width:0!important;}
+
+@media(max-width:767px){.gm-action-svg,.gm-nav-svg,.gm-illustration-svg{shape-rendering:auto;}}
+
+/* V8.11.10 — iconografía de torneo coherente: gris por defecto, blanco al hover */
+.gm-tournament-icon{
+  color:#777!important;
+  transition:color .22s ease,opacity .22s ease,transform .22s ease!important;
+  overflow:visible;
+}
+.gm-tournament-icon .gm-icon-line,
+.gm-tournament-icon .gm-icon-line path,
+.gm-tournament-icon .gm-icon-line rect,
+.gm-tournament-icon .gm-icon-line circle,
+.gm-tournament-icon .gm-icon-line line,
+.gm-tournament-icon .gm-icon-line polyline,
+.gm-tournament-icon .gm-icon-line polygon{
+  stroke:currentColor!important;
+}
+.gm-tournament-icon .gm-icon-line path,
+.gm-tournament-icon .gm-icon-line rect,
+.gm-tournament-icon .gm-icon-line circle,
+.gm-tournament-icon .gm-icon-line line,
+.gm-tournament-icon .gm-icon-line polyline,
+.gm-tournament-icon .gm-icon-line polygon{
+  transition:stroke .22s ease,fill .22s ease!important;
+}
+.gameplan__step .gm-gameplan-icon{color:#777!important;opacity:1!important;}
+.gameplan__step:hover .gm-gameplan-icon,
+.gm-context-icon:hover,
+.s1-tip:hover .gm-context-icon,
+.s2-svg-split:hover .gm-context-icon,
+.s2-unique:hover .gm-context-icon,
+.s3-svg-split:hover .gm-context-icon{
+  color:#f1f1f1!important;
+}
+/* Mantiene los iconos lineales con su color local. */
+.gameplan__step .gm-tournament-icon path,
+.gameplan__steps:not(:hover) .gameplan__step:not(.active) .gm-tournament-icon path,
+.gameplan__steps:hover .gameplan__step:not(:hover) .gm-tournament-icon path{
+  fill:none!important;
+  stroke:currentColor!important;
+}
+.gameplan__step .gm-tournament-icon circle[fill="currentColor"]{fill:currentColor!important;stroke:none!important;}
+@media (hover:none){
+  .gm-tournament-icon{color:#777!important;}
+}
+
+
+/* V8.11.11 — SVG restantes coherentes y sin duplicados */
+.gm-duration-svg,
+.gm-treat-icon{color:#777!important;transition:color .22s ease,transform .22s ease!important;}
+.s2-final__visual:hover .gm-duration-svg,
+.gm-duration-svg:hover,
+.s2-treat__visual:hover .gm-treat-icon,
+.gm-treat-icon:hover{color:#f1f1f1!important;}
+.s2-final__visual>.gm-duration-svg{display:block!important;width:100%!important;height:auto!important;max-height:8.5rem!important;}
+.s2treat__plus.gm-treat-icon,.s2treat__is.gm-treat-icon,.s2treat__sparkle.gm-treat-icon{overflow:visible!important;}
+/* Los SVG nuevos ya contienen la información visual: evita sprites heredados encima. */
+.s2-unique__visual>.illustration-sprite.is--s2,
+.nav-shop-link .illustration-sprite.is--btn-shop{display:none!important;}
+@media (hover:none){.gm-duration-svg,.gm-treat-icon{color:#777!important;}}
