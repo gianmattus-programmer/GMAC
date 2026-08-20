@@ -1,0 +1,28 @@
+# Checklist antes de publicar GMAC
+
+- [ ] Importar `GMAC_CONTROL_CENTER.xlsx` a Google Sheets
+- [ ] Pegar `Code.gs` en Apps Script
+- [ ] Ejecutar `setupGMAC()`
+- [ ] Crear `API_SECRET`
+- [ ] Crear `ADMIN_SECRET`
+- [ ] Implementar Apps Script como Web App
+- [ ] Crear repositorio GitHub para GMAC
+- [ ] Subir esta carpeta al repositorio
+- [ ] Conectar GitHub con Vercel
+- [ ] Configurar `GOOGLE_APPS_SCRIPT_URL` en Vercel
+- [ ] Configurar `SHEETS_API_SECRET` en Vercel
+- [ ] Configurar `ADMIN_SECRET` en Vercel
+- [ ] Hacer deployment
+- [ ] Crear una competición de prueba de 8 participantes
+- [ ] Crear una edición de prueba
+- [ ] Confirmar que genera 8 códigos distintos
+- [ ] Registrar 8 participantes
+- [ ] Completar `foto_url` de los participantes de prueba
+- [ ] Preparar fixture
+- [ ] Registrar cuartos, semifinales y final
+- [ ] Confirmar campeón + segundo lugar
+- [ ] Confirmar premios
+- [ ] Confirmar `FINALIZADO`
+- [ ] Confirmar registro en `GANADORES`
+- [ ] Añadir Instagram del ganador
+- [ ] Confirmar que se puede activar el siguiente torneo

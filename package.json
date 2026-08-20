@@ -1,0 +1,7 @@
+{
+  "name": "gmac-torneos",
+  "private": true,
+  "version": "1.0.0",
+  "description": "GMAC · FC Mobile + eFootball",
+  "engines": {"node": ">=20"}
+}
