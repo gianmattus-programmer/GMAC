@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>GMAC · Control Center</title>
+  <link rel="icon" href="assets/branding/gmac-logo.png" type="image/png">
+  <link rel="stylesheet" href="assets/css/admin.css?v=30.0">
+  <script src="assets/js/admin.js?v=30.0" defer></script>
+</head>
+<body>
+  <main class="admin-shell">
+    <section class="login-screen" id="loginScreen" aria-labelledby="loginTitle">
+      <div class="login-card">
+        <img src="assets/branding/gmac-logo.png" alt="GMAC" class="login-logo">
+        <p class="eyebrow">CONTROL CENTER</p>
+        <h1 id="loginTitle">Administración GMAC</h1>
+        <p class="muted">Acceso privado para gestionar torneos de FC Mobile y eFootball.</p>
+        <form id="loginForm" class="stack-form">
+          <label>Clave administrativa
+            <input id="adminSecret" type="password" autocomplete="current-password" required placeholder="••••••••••••••••">
+          </label>
+          <button class="btn primary" type="submit">Ingresar</button>
+          <p class="form-message" id="loginMessage" role="status"></p>
+        </form>
+        <small class="security-note">La clave se envía únicamente al servidor de GMAC y no se guarda en localStorage.</small>
+      </div>
+    </section>
+
+    <section class="dashboard hidden" id="dashboard">
+      <header class="topbar">
+        <a class="brand" href="index.html" aria-label="GMAC inicio">
+          <img src="assets/branding/gmac-logo.png" alt="GMAC">
+          <span><b>GMAC</b><small>CONTROL CENTER</small></span>
+        </a>
+        <div class="top-actions">
+          <a class="btn ghost" href="index.html">Ver web</a>
+          <button class="btn ghost" id="refreshBtn" type="button">Actualizar</button>
+          <button class="btn danger-ghost" id="logoutBtn" type="button">Cerrar sesión</button>
+        </div>
+      </header>
+
+      <div class="content-wrap">
+        <section class="hero-admin">
+          <div>
+            <p class="eyebrow">PRODUCCIÓN · GOOGLE SHEETS + DRIVE</p>
+            <h1>Panel administrativo</h1>
+            <p>Gestiona una edición completa sin editar filas manualmente.</p>
+          </div>
+          <div class="connection-badge" id="connectionBadge"><span></span> Conectando</div>
+        </section>
+
+        <section class="kpi-grid" id="kpiGrid">
+          <article class="kpi"><small>TORNEOS</small><strong id="kpiTournaments">—</strong><span>ediciones disponibles</span></article>
+          <article class="kpi"><small>VIGENTE</small><strong id="kpiCurrent">—</strong><span id="kpiCurrentName">sin edición activa</span></article>
+          <article class="kpi"><small>INSCRITOS</small><strong id="kpiRegistrations">—</strong><span id="kpiSlots">selecciona un torneo</span></article>
+          <article class="kpi"><small>PARTIDOS</small><strong id="kpiMatches">—</strong><span>fixture cargado</span></article>
+        </section>
+
+        <div class="workspace-grid">
+          <section class="panel tournament-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">EDICIÓN</p><h2>Gestionar torneo</h2></div>
+              <a id="publicTournamentLink" class="text-link disabled" href="#" target="_blank" rel="noopener">Abrir vista pública ↗</a>
+            </div>
+            <label class="field">Torneo
+              <select id="tournamentSelect"><option value="">Selecciona una edición</option></select>
+            </label>
+            <div id="tournamentSummary" class="tournament-summary empty">Selecciona un torneo para ver su estado.</div>
+            <div class="action-grid">
+              <button class="action-card" id="activateBtn" type="button"><b>Activar torneo</b><span>Lo convierte en VIGENTE y abre inscripciones.</span></button>
+              <button class="action-card" id="openRegsBtn" type="button"><b>Abrir inscripciones</b><span>Permite validar y utilizar códigos.</span></button>
+              <button class="action-card" id="closeRegsBtn" type="button"><b>Cerrar inscripciones</b><span>Bloquea nuevos registros sin finalizar la edición.</span></button>
+              <button class="action-card" id="prepareFixtureBtn" type="button"><b>Preparar fixture</b><span>Disponible cuando se completan los cupos.</span></button>
+            </div>
+            <p class="inline-status" id="actionMessage" role="status"></p>
+          </section>
+
+          <section class="panel create-panel">
+            <div class="panel-heading"><div><p class="eyebrow">NUEVA EDICIÓN</p><h2>Crear torneo</h2></div></div>
+            <form id="createTournamentForm" class="form-grid">
+              <label class="field full">Competición
+                <select id="competitionSelect" required><option value="">Selecciona una competición</option></select>
+              </label>
+              <label class="field">Cupos<input id="createSlots" type="number" min="2" required></label>
+              <label class="field">Fecha<input id="createDate" type="date"></label>
+              <label class="field">Hora<input id="createTime" type="time"></label>
+              <label class="field">Inscripción<input id="createEntry" type="text" placeholder="Ej. S/ 10"></label>
+              <label class="field">Premio 1.º<input id="createPrizeFirst" type="text" placeholder="Ej. S/ 150"></label>
+              <label class="field">Premio 2.º<input id="createPrizeSecond" type="text" placeholder="Ej. S/ 50"></label>
+              <button class="btn primary full" type="submit">Crear edición + códigos</button>
+            </form>
+            <p class="inline-status" id="createMessage" role="status"></p>
+          </section>
+        </div>
+
+        <section class="panel codes-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">ACCESOS</p><h2>Códigos de inscripción</h2></div>
+            <div class="compact-actions">
+              <button class="btn ghost" id="generateCodesBtn" type="button">Regenerar códigos</button>
+              <button class="btn ghost" id="exportCodesBtn" type="button">Exportar CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Código</th><th>Estado</th><th>Uso</th><th>Participante</th><th></th></tr></thead><tbody id="codesBody"><tr><td colspan="5" class="empty-cell">Selecciona un torneo.</td></tr></tbody></table></div>
+        </section>
+
+        <section class="panel registrations-panel">
+          <div class="panel-heading"><div><p class="eyebrow">PARTICIPANTES</p><h2>Inscripciones</h2></div><span class="count-pill" id="registrationCount">0</span></div>
+          <div class="table-wrap"><table><thead><tr><th>Nick</th><th>Nombre</th><th>Ubicación</th><th>Contacto</th><th>TikTok</th></tr></thead><tbody id="registrationsBody"><tr><td colspan="5" class="empty-cell">Sin datos.</td></tr></tbody></table></div>
+        </section>
+
+        <section class="panel matches-panel">
+          <div class="panel-heading"><div><p class="eyebrow">COMPETENCIA</p><h2>Fixture y resultados</h2></div><span class="count-pill" id="matchCount">0</span></div>
+          <div id="matchesGrid" class="matches-grid"><div class="empty-card">Todavía no hay fixture.</div></div>
+        </section>
+
+        <section class="danger-zone panel">
+          <div class="panel-heading"><div><p class="eyebrow">CIERRE</p><h2>Finalización manual</h2></div></div>
+          <p class="muted">GMAC finaliza automáticamente al guardar el resultado decisivo. Usa este bloque solo si necesitas cerrar una edición manualmente.</p>
+          <form id="finalizeForm" class="form-grid">
+            <label class="field">Campeón<input id="finalWinner" type="text" placeholder="Nick exacto"></label>
+            <label class="field">Segundo lugar<input id="finalRunner" type="text" placeholder="Nick exacto"></label>
+            <button class="btn danger full" type="submit">Finalizar edición manualmente</button>
+          </form>
+          <p class="inline-status" id="finalizeMessage" role="status"></p>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

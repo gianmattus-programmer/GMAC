@@ -1,4 +1,5 @@
-const { postAction, requireAdmin } = require('../lib/apps-script');
+const { postAction } = require('../lib/apps-script');
+const { requireAdminRequest } = require('../lib/admin-session');
 
 const ACTIONS = {
   'activate-tournament': 'activateTournament',
@@ -7,7 +8,10 @@ const ACTIONS = {
   'generate-codes': 'generateCodes',
   'prepare-fixture': 'prepareFixture',
   'save-result': 'saveResult',
-  'set-winner-instagram': 'setWinnerInstagram'
+  'set-winner-instagram': 'setWinnerInstagram',
+  'set-registrations': 'setRegistrations',
+  'snapshot': 'adminSnapshot',
+  'finalize-tournament': 'finalizeTournament',
 };
 
 function payloadFor(route, body = {}) {
@@ -15,22 +19,34 @@ function payloadFor(route, body = {}) {
     case 'activate-tournament':
     case 'generate-codes':
     case 'prepare-fixture':
+    case 'snapshot':
       return { tournamentId: body.tournamentId };
     case 'set-winner-instagram':
       return { tournamentId: body.tournamentId, url: body.url || '' };
+    case 'set-registrations':
+      return { tournamentId: body.tournamentId, status: body.status };
+    case 'finalize-tournament':
+      return {
+        tournamentId: body.tournamentId,
+        winner: body.winner,
+        runnerUp: body.runnerUp,
+        confirm: body.confirm,
+      };
     default:
       return body || {};
   }
 }
 
 module.exports = async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ message: 'Método no permitido.' });
   }
 
-  if (!requireAdmin(req)) {
-    return res.status(401).json({ message: 'No autorizado.' });
+  if (!requireAdminRequest(req)) {
+    return res.status(401).json({ message: 'Sesión administrativa requerida.' });
   }
 
   const route = String(req.query?.action || '').trim().toLowerCase();
