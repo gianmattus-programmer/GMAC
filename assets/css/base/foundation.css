@@ -1,0 +1,97 @@
+/* Gianmattus — foundation local. Sustituye las primitivas de layout que antes aportaba Webflow/FC88. */
+:root{
+  --gm-sidebar-width:212px;
+  --gm-topbar-height:36px;
+  --gm-side-pad-x:16px;
+  --gm-side-pad-y:18px;
+  --gm-line:rgba(21,21,21,.22);
+}
+
+html,body{width:100%;}
+body{min-width:320px;}
+.w-dyn-list,.w-dyn-items,.w-dyn-item{display:block;}
+.w-embed{display:block;}
+.w-form-done,.w-form-fail{margin-top:12px;}
+
+/* Contenedor y helpers de separación que antes venían del stylesheet remoto. */
+.container{width:min(1180px,calc(100% - 48px));margin-inline:auto;}
+.before__20{height:20px}.before__30{height:30px}.before__40,.before__40-is-50-mobile{height:40px}
+.before__50{height:50px}.before__60{height:60px}.before__80{height:80px}.before__100{height:100px}
+.d-block,.d-block-desktop{display:block}.span-full-line-mobile{display:inline}
+
+/* Botones base. */
+.btn{position:relative;display:block;width:100%;text-decoration:none;color:inherit;}
+.btn__inner{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;width:100%;padding:10px 12px;}
+.btn__back{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+.btn__back-svg{width:100%;height:100%;display:block;}
+.btn-icon{width:34px;height:34px;flex:0 0 34px;overflow:hidden;display:grid;place-items:center;}
+.btn-icon__svg{width:102px;max-width:none;height:34px;display:block;transform:translateX(0);}
+.btn-text-p{margin:0;font-size:11px;line-height:1.1;font-weight:800;text-transform:uppercase;letter-spacing:.03em;}
+
+/* Navegación lateral compartida. */
+.side{width:var(--gm-sidebar-width);background:var(--gm-bg);color:var(--gm-ink);}
+.side__border{position:absolute;top:0;right:0;width:1px;height:100%;background:rgba(21,21,21,.30);pointer-events:none;}
+.side__content{min-height:100%;padding:var(--gm-side-pad-y) var(--gm-side-pad-x);display:flex;flex-direction:column;}
+.side__top{display:block;}
+.side__bottom{margin-top:auto;padding-top:18px;}
+.side__row-logo{display:flex;align-items:center;min-height:76px;margin-bottom:12px;}
+.combo-logo{display:inline-flex;align-items:center;gap:9px;text-decoration:none;color:inherit;}
+.combo-logo__image{width:68px;height:68px;object-fit:contain;}
+.combo-logo__svg{display:none;}
+.combo-logo__text{font:900 18px/.88 var(--font-display);text-transform:uppercase;letter-spacing:-.03em;}
+.combo-logo__text.is--border{display:none;}
+.side__row-nav{display:grid;gap:0;}
+.nav-btn{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:8px 0;text-decoration:none;color:inherit;}
+.nav-btn__inner{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;}
+.nav-btn__p{margin:0;font:900 24px/.88 var(--font-display);text-transform:uppercase;letter-spacing:-.025em;white-space:nowrap;}
+.nav-btn__arrow,.filled-arrow{width:34px;height:34px;flex:0 0 34px;overflow:hidden;}
+.filled-arrow__svg{width:102px;max-width:none;height:34px;display:block;}
+.nav-btn__border{height:1px;width:100%;background:rgba(21,21,21,.22);}
+.gm-index-new{font:800 8px/1 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;margin-left:4px;vertical-align:top;}
+.side__row-catalogue,.side__row-meet{margin-top:8px;}
+.side__row-catalogue .btn__inner{color:var(--gm-paper);}
+.side__row-meet .btn__inner{color:var(--gm-ink);}
+.side__row-meet .btn-meet__p-extra{margin:5px 4px 0;font-size:8px;line-height:1.3;color:#5d5d5d;}
+.side__row-footer{display:grid;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(21,21,21,.2);}
+.p-copyright{margin:0;font-size:8px;line-height:1.35;}
+.socials{display:flex;gap:5px;flex-wrap:wrap;}
+.btn-social{position:relative;width:28px;height:28px;display:grid;place-items:center;overflow:hidden;}
+.btn-social__inner{position:relative;width:100%;height:100%;display:grid;place-items:center;}
+.btn-social__bg-svg{position:absolute;inset:0;width:100%;height:100%;}
+.btn-social__icon-svg{position:relative;width:13px;height:13px;z-index:1;}
+
+/* Mobile header y panel. */
+.header{position:relative;z-index:170;}
+.btn-mobile{display:none;}
+.nav-mobile{position:fixed;inset:0;z-index:160;background:var(--gm-bg);color:var(--gm-ink);transform:translateY(-105%);pointer-events:none;transition:transform .28s ease;overflow:hidden;}
+body[data-navigation-status="active"] .nav-mobile{transform:translateY(0);pointer-events:auto;}
+.nav-mobile__bg{position:absolute;inset:0;background:var(--gm-bg);}
+.nav-mobile__border{display:none;}
+.nav-mobile__inner,.nav-side{position:relative;width:100%;height:100%;}
+.nav-mobile .side__content{height:100%;padding:74px 22px 22px;overflow-y:auto;}
+.nav-mobile .side__row-close{position:absolute;top:16px;right:18px;z-index:3;}
+.nav-mobile .close{width:38px;height:38px;display:grid;place-items:center;}
+.nav-mobile .side__where{display:flex;align-items:center;gap:9px;margin-bottom:18px;}
+.nav-mobile .side__where-svg{width:12px;height:20px;}
+.nav-mobile .side__where-p{margin:0;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+.nav-mobile .nav-btn{min-height:62px;}
+.nav-mobile .nav-btn__p{font-size:34px;}
+.nav-mobile .nav-btn__arrow,.nav-mobile .filled-arrow{width:40px;height:40px;flex-basis:40px;}
+.nav-mobile .filled-arrow__svg{height:40px;width:120px;}
+
+@media(max-width:1100px) and (min-width:768px){
+  :root{--gm-sidebar-width:190px;--gm-side-pad-x:14px;}
+  .nav-btn__p{font-size:21px}.combo-logo__image{width:60px;height:60px}
+}
+@media(max-width:767px){
+  :root{--gm-sidebar-width:0px;--gm-topbar-height:0px;}
+  .container{width:min(100% - 30px,1180px)}
+  .before__100{height:64px}.before__40-is-50-mobile{height:50px}.d-block-desktop{display:inline}.span-full-line-mobile{display:block}
+  .btn-mobile{display:flex;position:fixed;right:14px;top:14px;z-index:180;pointer-events:auto;}
+  .btn-mobile .btn{width:auto;}
+  .btn-mobile .btn__inner{min-height:44px;padding:6px 10px;background:var(--gm-paper);border:1px solid var(--gm-ink);gap:7px;}
+  .btn-mobile .btn__back{display:none;}
+  .btn-mobile .btn-icon{width:24px;height:24px;flex-basis:24px;}
+  .btn-mobile .btn-icon__svg{height:24px;width:72px;}
+  .btn-mobile .btn-text-p{font-size:10px;}
+}
