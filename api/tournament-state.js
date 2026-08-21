@@ -1,4 +1,5 @@
 const { getAction, postAction } = require('../lib/apps-script');
+const HISTORY = require('../data/history/index.json');
 
 const upper = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 
@@ -34,6 +35,25 @@ function safeMatch(m = {}) {
   };
 }
 
+function publicPayload(data = {}, historical = false) {
+  return {
+    locked: !!data.locked,
+    historical: historical || !!data.historical,
+    registrations: (data.registrations || [])
+      .filter((r) => !['CANCELADA', 'RETIRADA', 'DESCALIFICADA'].includes(upper(r.status || r.estado)))
+      .map(safeRegistration),
+    matches: (data.matches || []).map(safeMatch),
+    message: data.message || '',
+  };
+}
+
+function staticSnapshot(tournamentId, game) {
+  const entry = HISTORY && HISTORY[tournamentId];
+  if (!entry || !entry.payload) return null;
+  if (game && entry.game && String(entry.game) !== String(game)) return null;
+  return publicPayload(entry.payload, true);
+}
+
 function noStore(res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
@@ -63,6 +83,15 @@ module.exports = async (req, res) => {
   const tournamentId = String(req.query.tournamentId);
   const game = String(req.query.game || '');
 
+  // Las ediciones archivadas en el repositorio ya no dependen de Google Sheets
+  // ni de Apps Script. El snapshot contiene únicamente el estado público seguro.
+  const archived = staticSnapshot(tournamentId, game);
+  if (archived) {
+    immutableHistory(res);
+    res.setHeader('X-GMAC-History-Source', 'static-snapshot');
+    return res.status(200).json(archived);
+  }
+
   try {
     let data = await getAction('state', { tournamentId, game });
     let historical = !!data.historical;
@@ -80,18 +109,15 @@ module.exports = async (req, res) => {
       }
     }
 
-    const payload = {
-      locked: !!data.locked,
-      historical,
-      registrations: (data.registrations || []).filter((r) => !['CANCELADA','RETIRADA','DESCALIFICADA'].includes(upper(r.status || r.estado))).map(safeRegistration),
-      matches: (data.matches || []).map(safeMatch),
-      message: data.message || '',
-    };
+    const payload = publicPayload(data, historical);
 
-    if (historical) immutableHistory(res);
-    else {
+    if (historical) {
+      immutableHistory(res);
+      res.setHeader('X-GMAC-History-Source', 'apps-script-fallback');
+    } else {
       noStore(res);
       res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
+      res.setHeader('X-GMAC-History-Source', 'live');
     }
 
     return res.status(200).json(payload);
