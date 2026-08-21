@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 
-const BASE_URL = String(process.env.GMAC_BASE_URL || 'https://gmac-iota.vercel.app').replace(/\/$/, '');
+const BASE_URL = String(process.env.GMAC_BASE_URL || 'https://www.gmactorneos.lat').replace(/\/$/, '');
+const APEX_URL = 'https://gmactorneos.lat';
 const HISTORY_PATH = new URL('../data/history/index.json', import.meta.url);
 const failures = [];
 
@@ -16,15 +17,15 @@ function assert(condition, message) {
   else pass(message);
 }
 
-async function get(path, { timeout = 25000 } = {}) {
+async function fetchUrl(url, { timeout = 25000, redirect = 'follow' } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(`${BASE_URL}${path}`, {
-      headers: { Accept: '*/*', 'User-Agent': 'GMAC-Production-Smoke/1.0' },
+    const response = await fetch(url, {
+      headers: { Accept: '*/*', 'User-Agent': 'GMAC-Production-Smoke/2.0' },
       cache: 'no-store',
       signal: controller.signal,
-      redirect: 'follow',
+      redirect,
     });
     const type = String(response.headers.get('content-type') || '');
     let body;
@@ -41,12 +42,24 @@ async function get(path, { timeout = 25000 } = {}) {
   }
 }
 
-async function checkHtml(path, needle) {
+async function get(path, options = {}) {
+  return fetchUrl(`${BASE_URL}${path}`, options);
+}
+
+async function checkHtml(path, needle, canonical, { noindex = false } = {}) {
   try {
     const { response, body } = await get(path);
     assert(response.status === 200, `${path} responde 200`);
     assert(typeof body === 'string' && body.includes(needle), `${path} contiene ${needle}`);
     assert(response.headers.get('x-content-type-options') === 'nosniff', `${path} envía X-Content-Type-Options`);
+    if (typeof body === 'string') {
+      assert(body.includes(`rel="canonical" href="${canonical}"`), `${path} tiene canonical de producción`);
+      assert(body.includes('property="og:url"'), `${path} incluye Open Graph URL`);
+      assert(body.includes('name="twitter:card"'), `${path} incluye Twitter Card`);
+      assert(body.includes('hreflang="es-PE"'), `${path} incluye hreflang es-PE`);
+      if (noindex) assert(/name="robots" content="noindex/i.test(body), `${path} mantiene noindex`);
+      else assert(/name="robots" content="index,follow/i.test(body), `${path} permite indexación`);
+    }
   } catch (error) {
     fail(`${path} no pudo comprobarse: ${error.message}`);
   }
@@ -64,6 +77,14 @@ async function checkTournaments(game) {
     assert(rows.length > 0, `/api/tournaments ${game} devuelve torneos`);
     assert(rows.every((t) => !hasRawGoogleDate(t.date) && !hasRawGoogleDate(t.time) && !hasRawGoogleDate(t.finishedAt)), `${game} no expone fechas crudas de Google Sheets`);
     assert(rows.every((t) => !(/^\d+(?:[.,]\d+)?$/.test(String(t.entry || '').trim()))), `${game} no expone inscripción monetaria sin moneda`);
+
+    const prefix = game === 'fc-mobile' ? 'fcm' : 'ef';
+    const worldCup = rows.find((t) => t.id === `${prefix}-copa-del-mundo`);
+    const euro = rows.find((t) => t.id === `${prefix}-eurocopa`);
+    const champions = rows.find((t) => t.id === `${prefix}-uefa-champions-league`);
+    assert(Number(worldCup?.bestThirdCount) === 8, `${game} Copa del Mundo conserva 8 mejores terceros`);
+    assert(Number(euro?.bestThirdCount) === 4, `${game} Eurocopa conserva 4 mejores terceros`);
+    assert(Number(champions?.leagueStageMatches) === 8, `${game} Champions conserva 8 partidos de fase liga`);
   } catch (error) {
     fail(`/api/tournaments ${game} falló: ${error.message}`);
   }
@@ -134,10 +155,40 @@ async function checkWinners() {
   }
 }
 
-await checkHtml('/', 'GMAC');
-await checkHtml('/fc-mobile.html', 'FC Mobile');
-await checkHtml('/efootball.html', 'eFootball');
-await checkHtml('/contacto.html', 'Contacto');
+async function checkSeoFiles() {
+  try {
+    const robots = await get('/robots.txt');
+    assert(robots.response.status === 200, '/robots.txt responde 200');
+    assert(typeof robots.body === 'string' && robots.body.includes('Sitemap: https://www.gmactorneos.lat/sitemap.xml'), 'robots.txt declara sitemap canónico');
+    assert(typeof robots.body === 'string' && robots.body.includes('Disallow: /admin'), 'robots.txt bloquea administración');
+    assert(typeof robots.body === 'string' && robots.body.includes('Disallow: /api/'), 'robots.txt bloquea APIs de rastreo');
+
+    const sitemap = await get('/sitemap.xml');
+    assert(sitemap.response.status === 200, '/sitemap.xml responde 200');
+    assert(typeof sitemap.body === 'string' && sitemap.body.includes('<loc>https://www.gmactorneos.lat/</loc>'), 'sitemap usa dominio canónico');
+    assert(typeof sitemap.body === 'string' && sitemap.body.includes('/fc-mobile.html</loc>') && sitemap.body.includes('/efootball.html</loc>'), 'sitemap incluye páginas de ambos juegos');
+  } catch (error) {
+    fail(`SEO técnico falló: ${error.message}`);
+  }
+}
+
+async function checkCanonicalRedirect() {
+  try {
+    const { response } = await fetchUrl(`${APEX_URL}/`, { redirect: 'manual' });
+    assert([301, 308].includes(response.status), 'dominio apex usa redirección permanente');
+    assert(String(response.headers.get('location') || '').startsWith(`${BASE_URL}/`), 'dominio apex redirige a www canónico');
+  } catch (error) {
+    fail(`Redirección de dominio falló: ${error.message}`);
+  }
+}
+
+await checkHtml('/', 'GMAC', `${BASE_URL}/`);
+await checkHtml('/fc-mobile.html', 'FC Mobile', `${BASE_URL}/fc-mobile.html`);
+await checkHtml('/efootball.html', 'eFootball', `${BASE_URL}/efootball.html`);
+await checkHtml('/contacto.html', 'Contacto', `${BASE_URL}/contacto.html`);
+await checkHtml('/torneo.html', 'GMAC', `${BASE_URL}/torneo.html`, { noindex: true });
+await checkSeoFiles();
+await checkCanonicalRedirect();
 await checkAdmin();
 await checkTournaments('fc-mobile');
 await checkTournaments('efootball');
