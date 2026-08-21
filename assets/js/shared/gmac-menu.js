@@ -24,4 +24,10 @@
     script.async=false;
     document.head.appendChild(script);
   }
+  if(currentGame==='fc-mobile'||currentGame==='efootball'){
+    const participant=document.createElement('script');
+    participant.src='assets/js/shared/participant-v35.js?v=35.0';
+    participant.async=false;
+    document.head.appendChild(participant);
+  }
 })();
