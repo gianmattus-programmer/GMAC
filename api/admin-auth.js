@@ -4,6 +4,7 @@ const {
   hasValidSession,
   credentialsMatch,
 } = require('../lib/admin-session');
+const { enforceRateLimit, enforceBodySize } = require('../lib/request-guards');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -13,6 +14,8 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'POST') {
+    if (!enforceBodySize(req, res, 4 * 1024)) return;
+    if (!enforceRateLimit(req, res, { key: 'admin-login', limit: 8, windowMs: 15 * 60_000 })) return;
     const secret = String(req.body?.secret || '');
     if (!credentialsMatch(secret)) {
       return res.status(401).json({ authenticated: false, message: 'Clave administrativa incorrecta.' });
