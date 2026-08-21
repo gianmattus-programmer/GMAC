@@ -124,7 +124,7 @@
     }
     const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.10';bracket.async=false;document.head.appendChild(bracket);
     const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-pdf-v39.js?v=39.2';pdf.async=false;document.head.appendChild(pdf);
-    const history=document.createElement('script');history.src='assets/js/shared/fixture-history-pdf-v37.js?v=37.0';history.async=false;document.head.appendChild(history);
+    const history=document.createElement('script');history.src='assets/js/shared/fixture-history-pdf-v37.js?v=40.6';history.async=false;document.head.appendChild(history);
   }
   if(validGame){
     const participant=document.createElement('script');
