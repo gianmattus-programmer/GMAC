@@ -3,7 +3,7 @@
 const $=(q,el=document)=>el.querySelector(q);
 const $$=(q,el=document)=>[...el.querySelectorAll(q)];
 const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const upper=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 let raf=0;
 
@@ -19,6 +19,17 @@ function editionLabel(n){
   if(!n)return'EDICIÓN';
   const suffix=n===1?'ERA':n===2?'DA':n===3?'ERA':'TA';
   return `${n}${suffix} EDICIÓN`;
+}
+function displayRoundTitle(value){
+  const raw=upper(value);
+  if(raw==='FINAL')return'FINAL';
+  if(raw.includes('SEMIFINAL'))return'SEMIFINAL';
+  if(raw.includes('CUART'))return'CUARTOS';
+  if(raw.includes('OCTAV'))return'OCTAVOS';
+  if(raw.includes('DIECISEIS')||raw.includes('RONDA DE 32'))return'16AVOS';
+  if(raw.includes('RONDA DE 64'))return'32AVOS';
+  if(raw.includes('RONDA DE 128'))return'64AVOS';
+  return clean(value);
 }
 function playerData(row){
   if(!row)return{name:'Por definir',score:'',penalty:'',empty:true};
@@ -49,7 +60,7 @@ function makeColumn(round,idx,side,matches,height){
   const col=document.createElement('section');
   col.className=`gm-v36-round gm-v36-round--${side}`;
   col.dataset.side=side;col.dataset.roundIndex=String(idx);col.style.setProperty('--v36-height',`${height}px`);col.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
-  col.innerHTML=`<h4 class="gm-v36-round__title">${esc(roundTitle(round))}</h4><div class="gm-v36-round__matches">${matches.map(m=>matchHTML(m)).join('')}</div>`;
+  col.innerHTML=`<h4 class="gm-v36-round__title">${esc(displayRoundTitle(roundTitle(round)))}</h4><div class="gm-v36-round__matches">${matches.map(m=>matchHTML(m)).join('')}</div>`;
   return col;
 }
 function enhance(source){
