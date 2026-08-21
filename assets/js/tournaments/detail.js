@@ -22,11 +22,19 @@
     document.querySelectorAll('[data-nav-game]').forEach(a=>a.classList.toggle('is-active',a.dataset.navGame===game));
     const back=document.querySelector('[data-detail-back]');if(back)back.href=game==='fc-mobile'?'fc-mobile.html':'efootball.html';const rules=document.querySelector('[data-detail-rules]');if(rules)rules.href=(game==='fc-mobile'?'fc-mobile.html':'efootball.html')+'#normas';
     document.querySelectorAll('[data-detail-register]').forEach(btn=>{btn.dataset.register=t.id});
+    const finalized=statusKey(t)==='finalizado';
     const trophy=document.querySelector('[data-detail-trophy]');if(trophy)trophy.innerHTML=trophyMarkup(t,false);
-    const winnerCup=document.querySelector('[data-detail-winner-cup]');if(winnerCup)winnerCup.innerHTML=trophyMarkup(t,true);
     const winner=String(t.winner||'').trim(); set('[data-detail-winner]',winner||'POR DEFINIR'); set('[data-detail-winner-copy]',winner?`${winner} es el campeón oficial de esta edición.`:'El campeón se mostrará cuando finalice la competición.');
-    const cover=document.querySelector('[data-detail-champion-cover]'); const coverSrc=String(t.championCover||'').trim(); if(cover){if(coverSrc){cover.hidden=false;cover.innerHTML=`<img src="${esc(coverSrc)}" alt="Portada del campeón ${esc(winner||t.title)}">`}else{cover.hidden=true;cover.innerHTML=''}}
-    const finalized=statusKey(t)==='finalizado'; document.querySelectorAll('[data-detail-register]').forEach(btn=>{if(finalized){btn.disabled=true;btn.setAttribute('aria-disabled','true');btn.textContent='CAMPEONATO FINALIZADO'}else{btn.disabled=false;btn.removeAttribute('aria-disabled')}}); const sideCopy=document.querySelector('[data-detail-side-copy]');if(sideCopy&&finalized)sideCopy.textContent='consulta el historial completo de esta edición.';
+    const coverSrc=String(t.championCover||'').trim();
+    const winnerCup=document.querySelector('[data-detail-winner-cup]');
+    if(winnerCup){
+      const showWinnerPhoto=finalized&&coverSrc;
+      winnerCup.innerHTML=showWinnerPhoto?`<img src="${esc(coverSrc)}" alt="Foto del campeón ${esc(winner||t.title)}" style="width:100%;height:100%;min-height:280px;object-fit:cover;display:block;border-radius:18px;filter:none">`:trophyMarkup(t,true);
+      winnerCup.style.overflow=showWinnerPhoto?'hidden':'';
+      winnerCup.style.padding=showWinnerPhoto?'0':'';
+    }
+    const cover=document.querySelector('[data-detail-champion-cover]');if(cover){cover.hidden=true;cover.innerHTML=''}
+    document.querySelectorAll('[data-detail-register]').forEach(btn=>{if(finalized){btn.disabled=true;btn.setAttribute('aria-disabled','true');btn.textContent='CAMPEONATO FINALIZADO'}else{btn.disabled=false;btn.removeAttribute('aria-disabled')}}); const sideCopy=document.querySelector('[data-detail-side-copy]');if(sideCopy&&finalized)sideCopy.textContent='consulta el historial completo de esta edición.';
     const ig=document.querySelector('[data-detail-instagram]');const igUrl=safeUrl(t.instagramWinner);if(ig){if(igUrl){ig.href=igUrl;ig.target='_blank';ig.rel='noopener noreferrer';ig.classList.remove('is-disabled');ig.removeAttribute('aria-disabled')}else{ig.href='#';ig.classList.add('is-disabled');ig.setAttribute('aria-disabled','true')}}
     renderVideos(t);renderEditions(t);
   }
