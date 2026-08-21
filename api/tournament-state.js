@@ -34,15 +34,31 @@ function safeMatch(m = {}) {
   };
 }
 
-module.exports = async (req, res) => {
+function noStore(res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
-  res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
+}
 
-  if (req.method !== 'GET') return res.status(405).json({ message: 'Método no permitido.' });
-  if (!req.query.tournamentId) return res.status(400).json({ message: 'Falta el torneo.' });
+function immutableHistory(res) {
+  const year = 31536000;
+  res.setHeader('Cache-Control', `public, max-age=${year}, immutable`);
+  res.setHeader('CDN-Cache-Control', `public, max-age=${year}, immutable`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${year}, immutable`);
+  res.removeHeader('Pragma');
+  res.removeHeader('Expires');
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== 'GET') {
+    noStore(res);
+    return res.status(405).json({ message: 'Método no permitido.' });
+  }
+  if (!req.query.tournamentId) {
+    noStore(res);
+    return res.status(400).json({ message: 'Falta el torneo.' });
+  }
 
   const tournamentId = String(req.query.tournamentId);
   const game = String(req.query.game || '');
@@ -64,14 +80,23 @@ module.exports = async (req, res) => {
       }
     }
 
-    return res.status(200).json({
+    const payload = {
       locked: !!data.locked,
       historical,
       registrations: (data.registrations || []).filter((r) => !['CANCELADA','RETIRADA','DESCALIFICADA'].includes(upper(r.status || r.estado))).map(safeRegistration),
       matches: (data.matches || []).map(safeMatch),
       message: data.message || '',
-    });
+    };
+
+    if (historical) immutableHistory(res);
+    else {
+      noStore(res);
+      res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
+    }
+
+    return res.status(200).json(payload);
   } catch (e) {
+    noStore(res);
     return res.status(503).json({ message: e.message });
   }
 };
