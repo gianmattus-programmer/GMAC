@@ -3,9 +3,11 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const INDEX_PATH = path.join(ROOT, 'data', 'history', 'index.json');
+const CHAMPION_DIR = path.join(ROOT, 'assets', 'champions');
 const BASE_URL = String(process.env.GMAC_BASE_URL || 'https://gmac-iota.vercel.app').replace(/\/$/, '');
 const GAMES = ['fc-mobile', 'efootball'];
 const MAX_ATTEMPTS = 4;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const upper = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -15,7 +17,7 @@ async function jsonFetch(url, attempt = 1) {
   const timer = setTimeout(() => controller.abort(), 22000);
   try {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json', 'User-Agent': 'GMAC-History-Snapshot/1.0' },
+      headers: { Accept: 'application/json', 'User-Agent': 'GMAC-History-Snapshot/1.1' },
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -94,49 +96,128 @@ async function finalizedTournaments() {
     const data = await jsonFetch(`${BASE_URL}/api/tournaments?game=${encodeURIComponent(game)}&snapshot=${Date.now()}`);
     for (const tournament of (data.tournaments || [])) {
       if (upper(tournament?.status) === 'FINALIZADO' && tournament?.id) {
-        all.push({ id: String(tournament.id), game });
+        all.push({ ...tournament, id: String(tournament.id), game });
       }
     }
   }
   return all;
 }
 
+function imageExtension(contentType) {
+  const type = String(contentType || '').toLowerCase().split(';')[0].trim();
+  if (type === 'image/png') return 'png';
+  if (type === 'image/webp') return 'webp';
+  if (type === 'image/avif') return 'avif';
+  if (type === 'image/gif') return 'gif';
+  if (type === 'image/jpeg' || type === 'image/jpg') return 'jpg';
+  return '';
+}
+
+async function fileExists(filePath) {
+  try { await fs.access(filePath); return true; }
+  catch { return false; }
+}
+
+async function archiveChampionPhoto(tournament, currentEntry) {
+  const current = String(currentEntry?.championPhoto || '').trim();
+  if (current.startsWith('/assets/champions/')) {
+    const filePath = path.join(ROOT, current.replace(/^\//, ''));
+    if (await fileExists(filePath)) return current;
+  }
+
+  const source = String(tournament?.championCover || '').trim();
+  if (!source) return '';
+  const url = new URL(source, `${BASE_URL}/`);
+  url.searchParams.set('archive', String(Date.now()));
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*', 'User-Agent': 'GMAC-History-Snapshot/1.1' },
+      signal: controller.signal,
+      cache: 'no-store',
+      redirect: 'follow',
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const extension = imageExtension(response.headers.get('content-type'));
+    if (!extension) throw new Error('el endpoint no devolvió una imagen compatible');
+    const declared = Number(response.headers.get('content-length') || 0);
+    if (declared > MAX_IMAGE_BYTES) throw new Error('la foto supera 8 MB');
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) throw new Error('la foto está vacía o supera 8 MB');
+
+    await fs.mkdir(CHAMPION_DIR, { recursive: true });
+    const safeId = tournament.id.replace(/[^A-Za-z0-9_-]/g, '_');
+    const filename = `${safeId}.${extension}`;
+    await fs.writeFile(path.join(CHAMPION_DIR, filename), bytes);
+    return `/assets/champions/${filename}`;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function main() {
   const index = await readIndex();
   const finalized = await finalizedTournaments();
-  let added = 0;
+  let snapshotsAdded = 0;
+  let photosAdded = 0;
+  let changed = false;
 
   for (const tournament of finalized) {
-    if (index[tournament.id]?.payload?.historical) continue;
-    const url = `${BASE_URL}/api/tournament-state?game=${encodeURIComponent(tournament.game)}&tournamentId=${encodeURIComponent(tournament.id)}&snapshot=${Date.now()}`;
-    try {
-      const data = await jsonFetch(url);
-      if (!data.historical) {
-        console.warn(`::warning::${tournament.id} todavía no devolvió historical=true; se intentará de nuevo en la próxima ejecución.`);
-        continue;
+    let entry = index[tournament.id] || null;
+
+    if (!entry?.payload?.historical) {
+      const url = `${BASE_URL}/api/tournament-state?game=${encodeURIComponent(tournament.game)}&tournamentId=${encodeURIComponent(tournament.id)}&snapshot=${Date.now()}`;
+      try {
+        const data = await jsonFetch(url);
+        if (!data.historical) {
+          console.warn(`::warning::${tournament.id} todavía no devolvió historical=true; se intentará de nuevo en la próxima ejecución.`);
+        } else {
+          const payload = canonicalPayload(data, tournament.id, tournament.game);
+          entry = {
+            ...(entry || {}),
+            game: tournament.game,
+            snapshotAt: new Date().toISOString(),
+            payload,
+          };
+          index[tournament.id] = entry;
+          snapshotsAdded += 1;
+          changed = true;
+          console.log(`Snapshot permanente creado: ${tournament.id} (${payload.registrations.length} participantes, ${payload.matches.length} partidos)`);
+        }
+      } catch (error) {
+        console.warn(`::warning::No se pudo archivar ${tournament.id}: ${error.message}. Se reintentará automáticamente.`);
       }
-      const payload = canonicalPayload(data, tournament.id, tournament.game);
-      index[tournament.id] = {
-        game: tournament.game,
-        snapshotAt: new Date().toISOString(),
-        payload,
-      };
-      added += 1;
-      console.log(`Snapshot permanente creado: ${tournament.id} (${payload.registrations.length} participantes, ${payload.matches.length} partidos)`);
-    } catch (error) {
-      console.warn(`::warning::No se pudo archivar ${tournament.id}: ${error.message}. Se reintentará automáticamente.`);
+    }
+
+    // Conserva también la foto del campeón como activo local, para que el
+    // historial no dependa a futuro de Drive, Spotify u otro host externo.
+    if (entry?.payload?.historical && !String(entry.championPhoto || '').startsWith('/assets/champions/')) {
+      try {
+        const championPhoto = await archiveChampionPhoto(tournament, entry);
+        if (championPhoto) {
+          entry.championPhoto = championPhoto;
+          index[tournament.id] = entry;
+          photosAdded += 1;
+          changed = true;
+          console.log(`Foto del campeón archivada: ${tournament.id} -> ${championPhoto}`);
+        }
+      } catch (error) {
+        console.warn(`::warning::No se pudo archivar la foto de ${tournament.id}: ${error.message}. Se reintentará automáticamente.`);
+      }
     }
   }
 
-  if (!added) {
-    console.log('No hay nuevos torneos finalizados para archivar.');
+  if (!changed) {
+    console.log('No hay nuevos torneos ni fotos de campeón para archivar.');
     return;
   }
 
   const ordered = Object.fromEntries(Object.entries(index).sort(([a], [b]) => a.localeCompare(b)));
   await fs.mkdir(path.dirname(INDEX_PATH), { recursive: true });
   await fs.writeFile(INDEX_PATH, `${JSON.stringify(ordered, null, 2)}\n`, 'utf8');
-  console.log(`Historial actualizado: ${added} snapshot(s) nuevo(s).`);
+  console.log(`Historial actualizado: ${snapshotsAdded} snapshot(s), ${photosAdded} foto(s) nueva(s).`);
 }
 
 main().catch((error) => {
