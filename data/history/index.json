@@ -1,0 +1,30 @@
+{
+  "fcm-flash-8": {
+    "game": "fc-mobile",
+    "snapshotAt": "2026-08-21T10:00:30.000Z",
+    "payload": {
+      "locked": false,
+      "historical": true,
+      "registrations": [
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"tucache","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"gravedeedad","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"kty","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"samsumg","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"con suela","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"ladiez","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"gaian","status":"CONFIRMADA"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","nick":"elpepe","status":"CONFIRMADA"}
+      ],
+      "matches": [
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R0:M0","stage":"CUARTOS","group":"","round":"1","player1":"tucache","player2":"gravedeedad","score1":2,"score2":1,"penalty1":null,"penalty2":null,"winner":"tucache","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R0:M1","stage":"CUARTOS","group":"","round":"1","player1":"kty","player2":"samsumg","score1":4,"score2":2,"penalty1":null,"penalty2":null,"winner":"kty","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R0:M2","stage":"CUARTOS","group":"","round":"1","player1":"con suela","player2":"ladiez","score1":1,"score2":1,"penalty1":4,"penalty2":3,"winner":"con suela","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R0:M3","stage":"CUARTOS","group":"","round":"1","player1":"gaian","player2":"elpepe","score1":2,"score2":1,"penalty1":null,"penalty2":null,"winner":"gaian","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R1:M0","stage":"SEMIFINAL","group":"","round":"2","player1":"tucache","player2":"kty","score1":5,"score2":2,"penalty1":null,"penalty2":null,"winner":"tucache","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R1:M1","stage":"SEMIFINAL","group":"","round":"2","player1":"con suela","player2":"gaian","score1":2,"score2":4,"penalty1":null,"penalty2":null,"winner":"gaian","status":"FINALIZADO"},
+        {"tournamentId":"fcm-flash-8","game":"fc-mobile","matchId":"KO:R2:M0","stage":"FINAL","group":"","round":"3","player1":"tucache","player2":"gaian","score1":1,"score2":3,"penalty1":null,"penalty2":null,"winner":"gaian","status":"FINALIZADO"}
+      ],
+      "message": ""
+    }
+  }
+}
