@@ -32,7 +32,7 @@
     const fallbackTag=(mode==='league'||mode==='league_playoffs')?'Liga':mode==='league_phase'?'Fase liga + play-off':mode==='groups'?'Fase de grupos':mode==='copa_rey'?'Copa eliminatoria':(t.type==='relampago'?'Torneo relámpago':`${t.slots} participantes`);
     const sk=statusKey(t); const detail=`torneo.html?game=${encodeURIComponent(page)}&id=${encodeURIComponent(t.id)}`;
     const cup=String(t.trophyCover||t.trophy||'').trim();
-    const cupMarkup=cup?`<img class="gm-card__cup" src="${esc(cup)}" alt="Copa de ${esc(t.title)}" loading="lazy">`:'';
+    const cupMarkup=cup?`<img class="gm-card__cup" src="${esc(cup)}" alt="Copa de ${esc(t.title)}" loading="lazy" decoding="async" fetchpriority="low">`:'';
     const titleMarkup=cup?`<div class="gm-card__title-row"><h3>${esc(t.title)}</h3>${cupMarkup}</div>`:`<h3>${esc(t.title)}</h3>`;
     const cupClass=cup?' gm-card--has-cup':'';
     const editionLabel=Number(t.edition)>0?`<span class="gm-card__edition">EDICIÓN ${esc(t.edition)}</span>`:'';
@@ -42,7 +42,7 @@
   function completedCard(t){
     const detail=`torneo.html?game=${encodeURIComponent(page)}&id=${encodeURIComponent(t.id)}`;
     const cover=String(t.championCover||'').trim(); const winner=String(t.winner||'Campeón por confirmar').trim();
-    const visual=cover?`<img src="${esc(cover)}" alt="Portada de ${esc(winner)}" loading="lazy">`:`<div class="gm-completed-card__placeholder"><span>CAMPEÓN</span><strong>${esc(winner)}</strong><small>Portada pendiente</small></div>`;
+    const visual=cover?`<img src="${esc(cover)}" alt="Portada de ${esc(winner)}" loading="lazy" decoding="async" fetchpriority="low">`:`<div class="gm-completed-card__placeholder"><span>CAMPEÓN</span><strong>${esc(winner)}</strong><small>Portada pendiente</small></div>`;
     return `<a class="gm-completed-card" href="${detail}"><div class="gm-completed-card__visual">${visual}<span class="gm-status gm-status--finalizado">FINALIZADO</span></div><div class="gm-completed-card__body"><span>${esc(t.finishedAt||t.date||'Edición finalizada')}${Number(t.edition)>0?` · EDICIÓN ${esc(t.edition)}`:''}</span><h3>${esc(t.title)}</h3><p>CAMPEÓN · <b>${esc(winner)}</b></p><strong>VER CAMPEONATO <i>➜</i></strong></div></a>`;
   }
 
@@ -70,11 +70,11 @@
     try{
       const r=await fetch(`/api/tournaments?game=${encodeURIComponent(page)}`,{headers:{Accept:'application/json'}});
       if(!r.ok)return;const data=await r.json();
-      if(Array.isArray(data.tournaments)&&data.tournaments.length){list=data.tournaments.filter(t=>page!=='fc-mobile'||String(t?.trophyCover||t?.trophy||'').trim());render(currentFilter)}
+      if(Array.isArray(data.tournaments)&&data.tournaments.length){const nextList=data.tournaments.filter(t=>page!=='fc-mobile'||String(t?.trophyCover||t?.trophy||'').trim());if(JSON.stringify(nextList)!==JSON.stringify(list)){list=nextList;render(currentFilter)}}
     }catch(e){}
   }
   loadLiveTournaments();
-  setInterval(loadLiveTournaments,15000);
+  setInterval(loadLiveTournaments,60000);
 
   function registrationsFor(t){
     return liveRegistrations.filter(r=>r&&((r.game||r.juego)===page)&&((r.tournamentId||r.torneo_id)===t.id));
@@ -120,7 +120,7 @@
     livePollTimer=setInterval(async()=>{
       if(!selected||!modal.classList.contains('is-open'))return;
       await loadTournamentState();renderCompetition();
-    },15000);
+    },30000);
   }
 
   function participantSlots(t){
@@ -167,7 +167,7 @@
         matchesHTML+=`<div class="gm-fixture-match">${playerRow(p1,label1,s1,pen1,m*2+1)}${playerRow(p2,label2,s2,pen2,m*2+2)}${resultControls(id,p1,p2,'knockout',result,false)}</div>`;
       }
       const isFinal=matches===1;
-      const finalTrophy=isFinal&&trophy?`<div class="gm-final-cup"><img src="${esc(trophy)}" alt="Copa minimalista de ${esc(selected?.title||'torneo')}"><span>COPA DEL CAMPEÓN</span></div>`:'';
+      const finalTrophy=isFinal&&trophy?`<div class="gm-final-cup"><img decoding="async" fetchpriority="low" src="${esc(trophy)}" alt="Copa minimalista de ${esc(selected?.title||'torneo')}"><span>COPA DEL CAMPEÓN</span></div>`:'';
       rounds.push(`<div class="gm-fixture-round ${isFinal?'is-final':''}"><div class="gm-fixture-round__title">${roundTitleByMatches(matches)}</div><div class="gm-fixture-round__matches">${finalTrophy}${matchesHTML}</div></div>`);
       if(matches===1)champion=next[0]||'';
       players=next;round++;

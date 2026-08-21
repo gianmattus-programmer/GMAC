@@ -62,7 +62,7 @@
       const slide=trophySlides[trophyIndex];
       trophyVisual.classList.add('is-changing');
       window.setTimeout(()=>{
-        if(image){image.src=slide.src;image.alt=slide.alt}
+        if(image){image.decoding='async';image.src=slide.src;image.alt=slide.alt;const nextSlide=trophySlides[(trophyIndex+1)%trophySlides.length];if(nextSlide?.src){const preload=new Image();preload.decoding='async';preload.src=nextSlide.src}}
         if(code)code.textContent=slide.code;
         if(name)name.innerHTML=slide.name;
         if(subtitle)subtitle.textContent=slide.subtitle;
@@ -115,7 +115,7 @@
   host.innerHTML=cards.map((t,i)=>{
     const cup=t.trophyCover||t.trophy||'';
     const link=t.id?`torneo.html?game=${encodeURIComponent(t.game)}&id=${encodeURIComponent(t.id)}`:`${pageFor(t.game)}#torneos`;
-    const media=cup?`<img src="${esc(cup)}" alt="Copa de ${esc(t.title)}" loading="lazy">`:`<div class="tournament-no-cup">${gameLabel(t.game)}</div>`;
+    const media=cup?`<img src="${esc(cup)}" alt="Copa de ${esc(t.title)}" loading="lazy" decoding="async" fetchpriority="low">`:`<div class="tournament-no-cup">${gameLabel(t.game)}</div>`;
     const open=/abiert/i.test(status(t));
     return `<a class="tournament-card" href="${link}"><div class="tournament-meta"><span>${String(i+1).padStart(2,'0')} · ${gameLabel(t.game)}</span><span class="${open?'open':''}">${esc(status(t))}</span></div><div class="tournament-media">${media}</div><h3>${esc(t.title||'Torneo GMAC')}</h3><p>${esc(t.format||t.desc||'Formato competitivo')}</p><div class="tournament-link"><span>${esc(t.slots||'—')} JUGADORES</span><span>VER TORNEO ↗</span></div></a>`;
   }).join('');
