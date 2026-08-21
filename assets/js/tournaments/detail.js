@@ -24,7 +24,16 @@
     document.querySelectorAll('[data-detail-register]').forEach(btn=>{btn.dataset.register=t.id});
     const finalized=statusKey(t)==='finalizado';
     const trophy=document.querySelector('[data-detail-trophy]');if(trophy)trophy.innerHTML=trophyMarkup(t,false);
-    const winner=String(t.winner||'').trim(); set('[data-detail-winner]',winner||'POR DEFINIR'); set('[data-detail-winner-copy]',winner?`${winner} es el campeón oficial de esta edición.`:'El campeón se mostrará cuando finalice la competición.');
+    const winner=String(t.winner||'').trim();
+    const runnerUp=String(t.runnerUp||'').trim();
+    set('[data-detail-winner]',winner||'POR DEFINIR'); set('[data-detail-winner-copy]',winner?`${winner} es el campeón oficial de esta edición.`:'El campeón se mostrará cuando finalice la competición.');
+    const winnerCopy=document.querySelector('[data-detail-winner-copy]');
+    if(winnerCopy){
+      let runner=document.querySelector('[data-detail-runner-up]');
+      if(!runner){runner=document.createElement('div');runner.setAttribute('data-detail-runner-up','');runner.style.cssText='margin:16px 0 20px;padding:12px 0;border-top:2px dotted #777;border-bottom:2px dotted #777';winnerCopy.insertAdjacentElement('afterend',runner)}
+      runner.hidden=!finalized&&!runnerUp;
+      runner.innerHTML=`<small style="display:block;font-size:9px;font-weight:950;letter-spacing:.1em;text-transform:uppercase">SEGUNDO LUGAR</small><b style="display:block;margin-top:5px;font-size:22px;text-transform:uppercase">${esc(runnerUp||'POR DEFINIR')}</b>`;
+    }
     const coverSrc=String(t.championCover||'').trim();
     const winnerCup=document.querySelector('[data-detail-winner-cup]');
     if(winnerCup){
