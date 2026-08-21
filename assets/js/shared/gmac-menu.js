@@ -9,9 +9,11 @@
     addEventListener('keydown',e=>{if(e.key==='Escape')close()});
   }
   document.querySelectorAll('[data-year]').forEach(el=>el.textContent=new Date().getFullYear());
-  const queryGame=new URLSearchParams(location.search).get('game');
+  const params=new URLSearchParams(location.search);
+  const queryGame=params.get('game');
   const currentGame=queryGame||document.body.dataset.game||'';
-  if(currentGame==='fc-mobile'||currentGame==='efootball'){
+  const validGame=currentGame==='fc-mobile'||currentGame==='efootball';
+  if(validGame){
     document.querySelectorAll('.rail-game-link,.mobile-game-links a').forEach(a=>{
       const active=a.getAttribute('href')?.startsWith(currentGame+'.html');
       a.classList.toggle('is-current',!!active);
@@ -22,15 +24,30 @@
       if(!btn)return;
       e.preventDefault();e.stopImmediatePropagation();
       const id=String(btn.dataset.register||'').trim();if(!id)return;
-      const fallback=()=>{location.href=`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}#competicion`};
-      if(typeof window.GM_OPEN_TOURNAMENT==='function'){
-        try{Promise.resolve(window.GM_OPEN_TOURNAMENT(id)).catch(fallback)}catch(_){fallback()}
-      }else fallback();
+      location.href=`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&register=1#competicion`;
     },true);
+  }
+  if(document.body.classList.contains('gm-detail-page')&&validGame){
+    const id=String(params.get('id')||'').trim();
+    if(id){
+      const stateUrl=`/api/tournament-state?game=${encodeURIComponent(currentGame)}&tournamentId=${encodeURIComponent(id)}`;
+      window.GMAC_STATE_PREFETCH=fetch(stateUrl,{headers:{Accept:'application/json'}}).then(r=>r.ok?r.clone().json():null).catch(()=>null);
+      if(params.get('register')==='1'){
+        let tries=0;
+        const openWhenReady=()=>{
+          if(typeof window.GM_OPEN_TOURNAMENT==='function'){
+            try{window.GM_OPEN_TOURNAMENT(id)}catch(_){}
+            return;
+          }
+          if(++tries<80)setTimeout(openWhenReady,50);
+        };
+        setTimeout(openWhenReady,0);
+      }
+    }
   }
   if(document.querySelector('[data-share-capture="fixture"]')||document.body.classList.contains('gm-detail-page')){
     if(!document.querySelector('link[data-gmac-bracket-v36]')){
-      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.11';css.dataset.gmacBracketV36='';
+      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.12';css.dataset.gmacBracketV36='';
       css.addEventListener('load',()=>requestAnimationFrame(()=>window.GMAC_ENHANCE_BRACKETS?.()));
       document.head.appendChild(css);
     }
@@ -38,7 +55,7 @@
     const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-pdf-v39.js?v=39.2';pdf.async=false;document.head.appendChild(pdf);
     const history=document.createElement('script');history.src='assets/js/shared/fixture-history-pdf-v37.js?v=37.0';history.async=false;document.head.appendChild(history);
   }
-  if(currentGame==='fc-mobile'||currentGame==='efootball'){
+  if(validGame){
     const participant=document.createElement('script');
     participant.src='assets/js/shared/participant-v35.js?v=35.0';
     participant.async=false;
