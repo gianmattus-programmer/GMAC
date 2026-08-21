@@ -105,7 +105,7 @@ function enhanceAll(){
 }
 window.GMAC_ENHANCE_BRACKETS=enhanceAll;
 const obs=new MutationObserver(()=>enhanceAll());
-const root=$('[data-fixture]')||document.body;obs.observe(root,{childList:true,subtree:true});
+obs.observe(document.body,{childList:true,subtree:true});
 addEventListener('resize',()=>{clearTimeout(window.__gmacV36Resize);window.__gmacV36Resize=setTimeout(()=>$$('[data-gmac-bracket]').forEach(draw),120)},{passive:true});
 enhanceAll();
 })();
