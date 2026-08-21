@@ -130,12 +130,17 @@ function enhance(source){
   [...competitive].reverse().forEach((round,rev)=>{const idx=competitive.length-1-rev,all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'right',all.slice(half),height))});
   const third=rounds.find(r=>upper(roundTitle(r)).includes('TERCER'));
   if(third&&roundMatches(third)[0]){const box=document.createElement('div');box.className='gm-v36-third-place';box.innerHTML=matchHTML(roundMatches(third)[0]);bracket.appendChild(box)}
+  const modalDialog=source.closest('.gm-modal__dialog');if(modalDialog)modalDialog.classList.add('gm-modal__dialog--bracket');
   shell.append(hint,bracket);source.insertAdjacentElement('beforebegin',shell);source.classList.add('gm-v36-source-hidden');source.dataset.v36Enhanced='1';source.setAttribute('aria-hidden','true');
   hydrateMeta(bracket,finalRound);requestAnimationFrame(()=>draw(bracket));
 }
 function point(el,host,edge){
   const r=el.getBoundingClientRect(),h=host.getBoundingClientRect();
   return{x:(edge==='left'?r.left:edge==='right'?r.right:r.left+r.width/2)-h.left,y:r.top+r.height/2-h.top};
+}
+function cardEdgePoint(card,host,edge,y){
+  const r=card.getBoundingClientRect(),h=host.getBoundingClientRect();
+  return{x:(edge==='left'?r.left:r.right)-h.left,y};
 }
 function path(svg,a,b){
   const mid=(a.x+b.x)/2;const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} H ${mid.toFixed(1)} V ${b.y.toFixed(1)} H ${b.x.toFixed(1)}`);svg.appendChild(p);
@@ -150,7 +155,14 @@ function draw(bracket){
       const a=$$('[data-v36-match]',outer),b=$$('[data-v36-match]',inner);
       a.forEach((m,i)=>{const target=b[Math.floor(i/2)];if(!target)return;path(svg,point(m,bracket,side==='left'?'right':'left'),point(target,bracket,side==='left'?'left':'right'))});
     }
-    const last=$(`.gm-v36-round[data-side="${side}"][data-round-index="${indices.at(-1)}"]`,bracket);const semi=$('[data-v36-match]',last);const final=$('[data-v36-final] [data-v36-match]',bracket);if(semi&&final)path(svg,point(semi,bracket,side==='left'?'right':'left'),point(final,bracket,side==='left'?'left':'right'));
+    const last=$(`.gm-v36-round[data-side="${side}"][data-round-index="${indices.at(-1)}"]`,bracket);
+    const semi=$('[data-v36-match]',last),finalMatch=$('[data-v36-final] [data-v36-match]',bracket),finalCard=$('.gm-v36-final-card',bracket);
+    if(semi&&finalMatch&&finalCard){
+      const from=point(semi,bracket,side==='left'?'right':'left');
+      const finalY=point(finalMatch,bracket,'center').y;
+      const to=cardEdgePoint(finalCard,bracket,side==='left'?'left':'right',finalY);
+      path(svg,from,to);
+    }
   });
 }
 function enhanceAll(){
