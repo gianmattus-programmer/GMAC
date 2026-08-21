@@ -3,7 +3,8 @@ name: Sync Apps Script V35
 on:
   push:
     paths:
-      - google-sheets/Code_GMAC_V35.gs.gz.b64
+      - google-sheets/code-v35.part1
+      - google-sheets/code-v35.part2
 
 permissions:
   contents: write
@@ -17,11 +18,13 @@ jobs:
           fetch-depth: 0
       - name: Decode Apps Script source
         run: |
+          test -f google-sheets/code-v35.part1
+          test -f google-sheets/code-v35.part2
           python - <<'PY'
           import base64, gzip, pathlib
           root = pathlib.Path('google-sheets')
-          raw = base64.b64decode((root / 'Code_GMAC_V35.gs.gz.b64').read_text().strip())
-          source = gzip.decompress(raw)
+          encoded = (root / 'code-v35.part1').read_text().strip() + (root / 'code-v35.part2').read_text().strip()
+          source = gzip.decompress(base64.b64decode(encoded))
           (root / 'Code.gs').write_bytes(source)
           (root / 'Code_GMAC_V35.gs').write_bytes(source)
           PY
