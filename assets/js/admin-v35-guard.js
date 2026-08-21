@@ -18,7 +18,7 @@ function syncPenaltyCard(card){
   const p1=$('.p1',card),p2=$('.p2',card),hasStored=clean(p1?.value)!==''||clean(p2?.value)!=='';
   const knockout=!drawAllowed(stage),tie=s1!==''&&s2!==''&&Number(s1)===Number(s2);
   const show=knockout&&(tie||hasStored);
-  box.style.display=show?'grid':'none';
+  box.hidden=!show;
   box.setAttribute('aria-hidden',show?'false':'true');
   if(!show&&p1&&!p1.disabled)p1.value='';
   if(!show&&p2&&!p2.disabled)p2.value='';
@@ -96,13 +96,7 @@ function syncAudit(){
   if(body&&body.innerHTML!==html)body.innerHTML=html;
 }
 
-function injectStyle(){
-  if($('#v35GuardStyle'))return;const style=document.createElement('style');style.id='v35GuardStyle';style.textContent=`
-.v35-guard-flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:12px 0 14px}.v35-guard-flow span{min-height:48px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px;display:flex;align-items:center;gap:7px;font-size:.68rem;font-weight:850;color:var(--muted)}.v35-guard-flow b{width:22px;height:22px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;font-size:.62rem;color:var(--ink)}.v35-guard-flow span.is-done{border-color:#a9c2ef;color:var(--blue)}.v35-guard-flow span.is-done b{background:var(--blue);border-color:var(--blue);color:#fff}.v35-guard-flow span.is-current{border-color:var(--ink);color:var(--ink)}.v35-guard-flow span.is-current b{background:var(--ink);border-color:var(--ink);color:#fff}.v35-guard-audit__body{border:1px solid var(--line);border-radius:12px;background:#fff;padding:13px 14px;font-size:.78rem;color:var(--muted)}.v35-guard-audit__body ul{margin:0;padding-left:18px;color:var(--danger);display:grid;gap:6px}.v35-guard-audit.has-issues [data-audit-count]{border-color:#d8aaaa;color:var(--danger)}@media(max-width:860px){.v35-guard-flow{grid-template-columns:repeat(4,minmax(120px,1fr));overflow-x:auto;padding-bottom:3px}}@media(max-width:560px){.v35-guard-flow{display:flex;overflow-x:auto}.v35-guard-flow span{min-width:128px}}
-`;
-  document.head.appendChild(style);
-}
-function run(){injectStyle();syncPenalties();syncFlow();syncAudit()}
+function run(){syncPenalties();syncFlow();syncAudit()}
 function schedule(){cancelAnimationFrame(scheduled);scheduled=requestAnimationFrame(run)}
 const observer=new MutationObserver(schedule);observer.observe(document.body,{childList:true,subtree:true,characterData:true});
 document.addEventListener('input',e=>{if(e.target.matches?.('.score-input'))schedule()});
