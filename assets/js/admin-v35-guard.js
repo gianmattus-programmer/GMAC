@@ -89,9 +89,11 @@ function auditIssues(){
 }
 function syncAudit(){
   ensureAudit();const panel=$('#v35GuardAudit');if(!panel)return;const issues=auditIssues();
-  const count=$('[data-audit-count]',panel),body=$('[data-audit-body]',panel);if(count)count.textContent=String(issues.length);
+  const count=$('[data-audit-count]',panel),body=$('[data-audit-body]',panel),countText=String(issues.length);
+  if(count&&count.textContent!==countText)count.textContent=countText;
   panel.classList.toggle('has-issues',issues.length>0);
-  if(body)body.innerHTML=issues.length?`<ul>${issues.map(x=>`<li>${x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</li>`).join('')}</ul>`:'Sin inconsistencias detectadas en la vista cargada.';
+  const html=issues.length?`<ul>${issues.map(x=>`<li>${x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</li>`).join('')}</ul>`:'Sin inconsistencias detectadas en la vista cargada.';
+  if(body&&body.innerHTML!==html)body.innerHTML=html;
 }
 
 function injectStyle(){
@@ -103,6 +105,6 @@ function injectStyle(){
 function run(){injectStyle();syncPenalties();syncFlow();syncAudit()}
 function schedule(){cancelAnimationFrame(scheduled);scheduled=requestAnimationFrame(run)}
 const observer=new MutationObserver(schedule);observer.observe(document.body,{childList:true,subtree:true,characterData:true});
-document.addEventListener('input',e=>{if(e.target.matches('.score-input'))schedule()});
+document.addEventListener('input',e=>{if(e.target.matches?.('.score-input'))schedule()});
 run();
 })();
