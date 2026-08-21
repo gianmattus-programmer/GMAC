@@ -5,19 +5,43 @@ const $$=(q,el=document)=>[...el.querySelectorAll(q)];
 const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const upper=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+const metaCache=new Map();
 let raf=0;
 
-function editionNumber(){
+function tournamentId(){return clean($('#tournament-id')?.value)||clean(new URLSearchParams(location.search).get('id'))}
+function pageGame(){return clean(document.body?.dataset?.game)||clean(new URLSearchParams(location.search).get('game'))}
+function localTournament(id=tournamentId(),game=pageGame()){
+  if(!id)return null;
+  const source=window.GM_TOURNAMENTS||{};
+  const preferred=Array.isArray(source?.[game])?source[game]:[];
+  const hit=preferred.find(t=>String(t?.id)===String(id));if(hit)return hit;
+  for(const rows of Object.values(source)){if(!Array.isArray(rows))continue;const found=rows.find(t=>String(t?.id)===String(id));if(found)return found}
+  return null;
+}
+async function tournamentMeta(){
+  const id=tournamentId(),game=pageGame();if(!id)return null;
+  const local=localTournament(id,game);if(local&&Number(local.edition)>0&&clean(local.trophyFixture))return local;
+  const key=`${game}|${id}`;if(metaCache.has(key))return metaCache.get(key);
+  const pending=(async()=>{
+    try{
+      const r=await fetch(`/api/tournaments?game=${encodeURIComponent(game)}`,{headers:{Accept:'application/json'},cache:'no-store'});
+      if(r.ok){const data=await r.json();const found=(Array.isArray(data?.tournaments)?data.tournaments:[]).find(t=>String(t?.id)===String(id));if(found)return found}
+    }catch(_){}
+    return local||null;
+  })();
+  metaCache.set(key,pending);return pending;
+}
+function editionNumber(meta=null){
   const direct=clean($('[data-detail-edition]')?.textContent);
   let m=direct.match(/(\d+)/);if(m)return Number(m[1]);
-  const selected=clean($('[data-selected-tournament]')?.textContent);
-  m=selected.match(/EDICI[ÓO]N\s*(\d+)/i);if(m)return Number(m[1]);
-  const id=new URLSearchParams(location.search).get('id')||'';
-  m=id.match(/(?:e|edicion|edition)[-_]?(\d+)$/i);return m?Number(m[1]):0;
+  const selected=clean($('[data-selected-tournament]')?.dataset?.edition)||clean($('[data-selected-tournament]')?.textContent);
+  m=selected.match(/EDICI[ÓO]N\s*(\d+)/i)||selected.match(/^(\d+)$/);if(m)return Number(m[1]);
+  const local=meta||localTournament();if(Number(local?.edition)>0)return Number(local.edition);
+  const id=tournamentId();m=id.match(/(?:e|edicion|edition)[-_]?(\d+)$/i);return m?Number(m[1]):0;
 }
 function editionLabel(n){
   if(!n)return'EDICIÓN';
-  const suffix=n===1?'ERA':n===2?'DA':n===3?'ERA':'TA';
+  const suffix={1:'ERA',2:'DA',3:'ERA',4:'TA',5:'TA',6:'TA',7:'MA',8:'VA',9:'NA',10:'MA'}[Number(n)]||'TA';
   return `${n}${suffix} EDICIÓN`;
 }
 function displayRoundTitle(value){
@@ -53,8 +77,8 @@ function matchHTML(match,{final=false}={}){
 }
 function roundTitle(round){return clean($('.gm-fixture-round__title',round)?.textContent)||'RONDA'}
 function roundMatches(round){return $$('.gm-fixture-match',round)}
-function trophySrc(finalRound){
-  return $('.gm-final-cup img',finalRound)?.getAttribute('src')||$('[data-fixture-cup] img')?.getAttribute('src')||$('[data-detail-trophy] img')?.getAttribute('src')||'';
+function trophySrc(finalRound,meta=null){
+  return clean(meta?.trophyFixture)||clean(localTournament()?.trophyFixture)||$('.gm-final-cup img',finalRound)?.getAttribute('src')||$('[data-fixture-cup] img')?.getAttribute('src')||$('[data-detail-trophy] img')?.getAttribute('src')||'';
 }
 function makeColumn(round,idx,side,matches,height){
   const col=document.createElement('section');
@@ -62,6 +86,18 @@ function makeColumn(round,idx,side,matches,height){
   col.dataset.side=side;col.dataset.roundIndex=String(idx);col.style.setProperty('--v36-height',`${height}px`);col.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
   col.innerHTML=`<h4 class="gm-v36-round__title">${esc(displayRoundTitle(roundTitle(round)))}</h4><div class="gm-v36-round__matches">${matches.map(m=>matchHTML(m)).join('')}</div>`;
   return col;
+}
+async function hydrateMeta(bracket,finalRound){
+  if(!bracket?.isConnected)return;
+  const meta=await tournamentMeta();if(!bracket?.isConnected)return;
+  const edition=editionNumber(meta),cup=trophySrc(finalRound,meta);
+  if(edition){bracket.dataset.edition=String(edition);const label=$('.gm-v36-final-meta span',bracket);if(label)label.textContent=editionLabel(edition)}
+  if(cup){
+    bracket.dataset.trophyFixture=cup;
+    const host=$('.gm-v36-trophy',bracket);if(host){let img=$('img',host);if(!img){host.innerHTML='<img alt="Copa del torneo" decoding="async">';img=$('img',host)}if(img&&img.getAttribute('src')!==cup)img.setAttribute('src',cup)}
+  }
+  bracket.dataset.metaReady='1';
+  bracket.dispatchEvent(new CustomEvent('gmac:bracket-meta',{bubbles:true,detail:{edition,cup}}));
 }
 function enhance(source){
   if(!source||source.dataset.v36Enhanced==='1')return;
@@ -78,17 +114,18 @@ function enhance(source){
   const shell=document.createElement('div');shell.className='gm-v36-bracket-shell';shell.tabIndex=0;shell.setAttribute('aria-label','Fixture eliminatorio desplazable');
   const hint=document.createElement('div');hint.className='gm-v36-scroll-hint';hint.textContent='Desliza horizontalmente para ver todo el fixture';
   const bracket=document.createElement('div');bracket.className='gm-v36-bracket';bracket.dataset.gmacBracket='';bracket.style.setProperty('--v36-height',`${height}px`);bracket.style.gridTemplateColumns=`repeat(${competitive.length},var(--v36-round-w)) var(--v36-final-w) repeat(${competitive.length},var(--v36-round-w))`;
+  const id=tournamentId(),local=localTournament(id,pageGame()),initialEdition=editionNumber(local),initialCup=trophySrc(finalRound,local);if(id)bracket.dataset.tournamentId=id;if(initialEdition)bracket.dataset.edition=String(initialEdition);if(initialCup)bracket.dataset.trophyFixture=initialCup;
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','gm-v36-connectors');svg.setAttribute('aria-hidden','true');bracket.appendChild(svg);
   competitive.forEach((round,idx)=>{const all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'left',all.slice(0,half),height))});
   const center=document.createElement('section');center.className='gm-v36-final-column';center.dataset.v36Final='';center.style.setProperty('--v36-height',`${height}px`);center.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
-  const cup=trophySrc(finalRound),ed=editionLabel(editionNumber());
-  center.innerHTML=`<div class="gm-v36-final-card"><div class="gm-v36-final-grid"><div class="gm-v36-final-meta"><b>FINAL</b><span>${esc(ed)}</span></div><div class="gm-v36-trophy">${cup?`<img src="${esc(cup)}" alt="Copa del torneo" decoding="async">`:'<span>COPA GMAC</span>'}</div><div class="gm-v36-final-match">${matchHTML(finalMatch,{final:true})}</div></div></div>`;
+  const ed=editionLabel(initialEdition);
+  center.innerHTML=`<div class="gm-v36-final-card"><div class="gm-v36-final-grid"><div class="gm-v36-final-meta"><b>FINAL</b><span>${esc(ed)}</span></div><div class="gm-v36-trophy">${initialCup?`<img src="${esc(initialCup)}" alt="Copa del torneo" decoding="async">`:'<span>COPA PENDIENTE</span>'}</div><div class="gm-v36-final-match">${matchHTML(finalMatch,{final:true})}</div></div></div>`;
   bracket.appendChild(center);
   [...competitive].reverse().forEach((round,rev)=>{const idx=competitive.length-1-rev,all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'right',all.slice(half),height))});
   const third=rounds.find(r=>upper(roundTitle(r)).includes('TERCER'));
   if(third&&roundMatches(third)[0]){const box=document.createElement('div');box.className='gm-v36-third-place';box.innerHTML=matchHTML(roundMatches(third)[0]);bracket.appendChild(box)}
   shell.append(hint,bracket);source.insertAdjacentElement('beforebegin',shell);source.classList.add('gm-v36-source-hidden');source.dataset.v36Enhanced='1';source.setAttribute('aria-hidden','true');
-  requestAnimationFrame(()=>draw(bracket));
+  hydrateMeta(bracket,finalRound);requestAnimationFrame(()=>draw(bracket));
 }
 function point(el,host,edge){
   const r=el.getBoundingClientRect(),h=host.getBoundingClientRect();
