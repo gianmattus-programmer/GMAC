@@ -3,7 +3,7 @@
 const $=(q,el=document)=>el.querySelector(q);
 const $$=(q,el=document)=>[...el.querySelectorAll(q)];
 const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const upper=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 let raf=0;
 
@@ -54,7 +54,7 @@ function matchHTML(match,{final=false}={}){
 function roundTitle(round){return clean($('.gm-fixture-round__title',round)?.textContent)||'RONDA'}
 function roundMatches(round){return $$('.gm-fixture-match',round)}
 function trophySrc(finalRound){
-  return $('.gm-final-cup img',finalRound)?.getAttribute('src')||$('[data-fixture-cup] img')?.getAttribute('src')||'';
+  return $('.gm-final-cup img',finalRound)?.getAttribute('src')||$('[data-fixture-cup] img')?.getAttribute('src')||$('[data-detail-trophy] img')?.getAttribute('src')||'';
 }
 function makeColumn(round,idx,side,matches,height){
   const col=document.createElement('section');
