@@ -1,0 +1,37 @@
+name: GMAC Production Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '32 */2 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/production-smoke.mjs'
+      - '.github/workflows/production-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gmac-production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Wait for production alias to settle
+        run: sleep 20
+
+      - name: Verify GMAC production
+        env:
+          GMAC_BASE_URL: https://gmac-iota.vercel.app
+        run: node scripts/production-smoke.mjs
