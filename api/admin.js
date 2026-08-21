@@ -19,6 +19,67 @@ const ACTIONS = {
   'regenerate-code': 'regenerateCode',
 };
 
+function upper(value) {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
+function nonNegativeInteger(value, label) {
+  if (value === '' || value === null || value === undefined) {
+    throw new Error(`${label} es obligatorio.`);
+  }
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0) {
+    throw new Error(`${label} debe ser un número entero igual o mayor que 0.`);
+  }
+  return number;
+}
+
+function drawAllowed(stage) {
+  const value = upper(stage);
+  return value.includes('GRUPO') || value.includes('LIGA') || value.includes('JORNADA') || value.includes('FASE LIGA');
+}
+
+function saveResultPayload(body = {}) {
+  const payload = {
+    tournamentId: String(body.tournamentId || '').trim(),
+    matchId: String(body.matchId || '').trim(),
+    stage: String(body.stage || body.fase || '').trim(),
+    group: String(body.group || body.grupo || '').trim(),
+    round: body.round ?? body.jornada ?? '',
+    player1: String(body.player1 || body.jugador_1 || '').trim(),
+    player2: String(body.player2 || body.jugador_2 || '').trim(),
+    score1: nonNegativeInteger(body.score1, 'Marcador 1'),
+    score2: nonNegativeInteger(body.score2, 'Marcador 2'),
+  };
+
+  if (!payload.tournamentId || !payload.matchId) {
+    throw new Error('Torneo y partido son obligatorios.');
+  }
+  if (!payload.player1 || !payload.player2) {
+    throw new Error('El partido todavía no tiene ambos participantes definidos.');
+  }
+
+  const tied = payload.score1 === payload.score2;
+  if (!tied || drawAllowed(payload.stage)) {
+    // En partidos sin desempate se limpian penales anteriores para que nunca
+    // quede un segundo marcador obsoleto en el fixture público.
+    payload.penalty1 = '';
+    payload.penalty2 = '';
+    return payload;
+  }
+
+  payload.penalty1 = nonNegativeInteger(body.penalty1, 'Penales 1');
+  payload.penalty2 = nonNegativeInteger(body.penalty2, 'Penales 2');
+  if (payload.penalty1 === payload.penalty2) {
+    throw new Error('Los penales deben definir un ganador.');
+  }
+  return payload;
+}
+
 function payloadFor(route, body = {}) {
   switch (route) {
     case 'activate-tournament':
@@ -26,6 +87,8 @@ function payloadFor(route, body = {}) {
     case 'prepare-fixture':
     case 'snapshot':
       return { tournamentId: body.tournamentId };
+    case 'save-result':
+      return saveResultPayload(body);
     case 'set-winner-instagram':
       return { tournamentId: body.tournamentId, url: body.url || '' };
     case 'set-registrations':
