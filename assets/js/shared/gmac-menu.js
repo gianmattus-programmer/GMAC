@@ -17,15 +17,25 @@
       a.classList.toggle('is-current',!!active);
       if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
     });
+    document.addEventListener('click',e=>{
+      const btn=e.target.closest?.('.gm-register-mini[data-register]');
+      if(!btn)return;
+      e.preventDefault();e.stopImmediatePropagation();
+      const id=String(btn.dataset.register||'').trim();if(!id)return;
+      const fallback=()=>{location.href=`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}#competicion`};
+      if(typeof window.GM_OPEN_TOURNAMENT==='function'){
+        try{Promise.resolve(window.GM_OPEN_TOURNAMENT(id)).catch(fallback)}catch(_){fallback()}
+      }else fallback();
+    },true);
   }
   if(document.querySelector('[data-share-capture="fixture"]')||document.body.classList.contains('gm-detail-page')){
     if(!document.querySelector('link[data-gmac-bracket-v36]')){
-      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.10';css.dataset.gmacBracketV36='';
+      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.11';css.dataset.gmacBracketV36='';
       css.addEventListener('load',()=>requestAnimationFrame(()=>window.GMAC_ENHANCE_BRACKETS?.()));
       document.head.appendChild(css);
     }
     const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.10';bracket.async=false;document.head.appendChild(bracket);
-    const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-pdf-v39.js?v=39.1';pdf.async=false;document.head.appendChild(pdf);
+    const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-pdf-v39.js?v=39.2';pdf.async=false;document.head.appendChild(pdf);
     const history=document.createElement('script');history.src='assets/js/shared/fixture-history-pdf-v37.js?v=37.0';history.async=false;document.head.appendChild(history);
   }
   if(currentGame==='fc-mobile'||currentGame==='efootball'){
