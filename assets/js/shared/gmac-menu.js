@@ -2,11 +2,20 @@
   const toggle=document.querySelector('[data-mobile-menu-toggle]');
   const menu=document.querySelector('[data-mobile-menu]');
   if(toggle&&menu){
+    if(!menu.querySelector('a[href="guias.html"]')){
+      const guide=document.createElement('a');guide.href='guias.html';guide.textContent='Guías';
+      const contact=[...menu.querySelectorAll('a')].find(a=>/contacto/i.test(a.textContent||''));
+      if(contact)contact.before(guide);else menu.appendChild(guide);
+    }
     const close=()=>{menu.classList.remove('is-open');toggle.setAttribute('aria-expanded','false');document.body.classList.remove('menu-open')};
     toggle.addEventListener('click',()=>{const open=!menu.classList.contains('is-open');menu.classList.toggle('is-open',open);toggle.setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open)});
     menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',close));
     addEventListener('resize',()=>{if(innerWidth>980)close()},{passive:true});
     addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  }
+  const railContact=document.querySelector('.rail-contact');
+  if(railContact&&!document.querySelector('.rail-guide-link')){
+    const guide=document.createElement('a');guide.className='rail-contact rail-guide-link';guide.href='guias.html';guide.innerHTML='GUÍAS <span>↗</span>';railContact.before(guide);
   }
   document.querySelectorAll('[data-year]').forEach(el=>el.textContent=new Date().getFullYear());
   const params=new URLSearchParams(location.search);
