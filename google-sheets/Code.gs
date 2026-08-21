@@ -55,7 +55,7 @@ function upsertConfigDefaults_(ss){
     ['CODIGO_USOS_MAX','1','Cada código es de un solo uso'],
     ['GENERAR_CODIGOS_AL_CREAR_TORNEO','SI','Crea un código por cupo'],
     ['FINALIZAR_CON_FINAL','SI','La final o tabla completa archiva el torneo'],
-    ['MOSTRAR_FIXTURE_FINALIZADO','NO','Los torneos finalizados no exponen el estado competitivo'],
+    ['MOSTRAR_FIXTURE_FINALIZADO','SI','Las ediciones finalizadas conservan y muestran su fixture histórico completo'],
     ['MONEDA','PEN','Moneda por defecto'],['ZONA_HORARIA','America/Lima','Zona horaria operativa'],
     ['COPAS_ROOT_FOLDER_ID','1hZAdbnpiClB9LF2bYARk8Dy58uTHWSJl','Carpeta raíz de trofeos'],
     ['COPAS_COMPARTIDAS_FOLDER_ID','1riwk6_IVCJOmY5dJ_cV4j5kFmetQd4v9','Copas para ambos juegos'],
@@ -286,7 +286,7 @@ function generateCodes_(tournamentId,force){
 }
 function activateTournament_(id){
   const ss=ss_(),sh=ss.getSheetByName(TAB_TORNEOS),rows=rows_(sh),target=rows.find(r=>String(r.id)===String(id));if(!target)throw new Error('Torneo no encontrado.');const other=rows.find(r=>String(r.id)!==String(id)&&upper_(r.estado)==='VIGENTE');if(other)throw new Error('Ya existe un torneo VIGENTE: '+other.titulo+' · Edición '+other.edicion);
-  const hm=headerMap_(sh);sh.getRange(target._row,hm.estado).setValue('VIGENTE');sh.getRange(target._row,hm.inscripciones_estado).setValue('ABIERTAS');audit_('TORNEO_ACTIVADO',id,'Edición activada y registros abiertos','ADMIN');return{ok:true,message:'Torneo activado.'};
+  const codes=generateCodes_(id,false),hm=headerMap_(sh);sh.getRange(target._row,hm.estado).setValue('VIGENTE');sh.getRange(target._row,hm.inscripciones_estado).setValue('ABIERTAS');audit_('TORNEO_ACTIVADO',id,'Edición activada y registros abiertos · códigos disponibles: '+(Number(codes.available)||0),'ADMIN');return{ok:true,codesAvailable:Number(codes.available)||0,message:'Torneo activado. '+(Number(codes.available)||0)+' códigos disponibles.'};
 }
 function setWinnerInstagram_(tournamentId,url){const ss=ss_(),tsh=ss.getSheetByName(TAB_TORNEOS),tr=tournamentRow_(tournamentId);if(!tr)throw new Error('Torneo no encontrado.');const hm=headerMap_(tsh);tsh.getRange(tr._row,hm.instagram_ganador).setValue(url||'');const wsh=ss.getSheetByName(TAB_WIN),wh=headerMap_(wsh),wr=rows_(wsh).find(r=>String(r.torneo_id)===String(tournamentId));if(wr)wsh.getRange(wr._row,wh.instagram_url).setValue(url||'');audit_('INSTAGRAM_GANADOR',tournamentId,url||'Enlace eliminado','ADMIN');return{ok:true,message:'Instagram actualizado.'}}
 function setRegistrations_(tournamentId,status){
