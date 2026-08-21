@@ -13,6 +13,15 @@
   const queryGame=params.get('game');
   const currentGame=queryGame||document.body.dataset.game||'';
   const validGame=currentGame==='fc-mobile'||currentGame==='efootball';
+
+  // El historial finalizado es de solo lectura. Evita que registration.js cree
+  // su polling de 30 s cuando el modal ya fue convertido en historial.
+  const nativeSetInterval=window.setInterval.bind(window);
+  window.setInterval=(fn,delay,...args)=>{
+    if(Number(delay)===30000&&document.querySelector('.gm-modal.gm-modal--readonly.is-open'))return 0;
+    return nativeSetInterval(fn,delay,...args);
+  };
+
   if(validGame){
     document.querySelectorAll('.rail-game-link,.mobile-game-links a').forEach(a=>{
       const active=a.getAttribute('href')?.startsWith(currentGame+'.html');
@@ -24,14 +33,32 @@
       if(!btn)return;
       e.preventDefault();e.stopImmediatePropagation();
       const id=String(btn.dataset.register||'').trim();if(!id)return;
-      location.href=`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&register=1#competicion`;
+      location.assign(`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&register=1#competicion`);
     },true);
   }
+
   if(document.body.classList.contains('gm-detail-page')&&validGame){
     const id=String(params.get('id')||'').trim();
     if(id){
       const stateUrl=`/api/tournament-state?game=${encodeURIComponent(currentGame)}&tournamentId=${encodeURIComponent(id)}`;
-      window.GMAC_STATE_PREFETCH=fetch(stateUrl,{headers:{Accept:'application/json'}}).then(r=>r.ok?r.clone().json():null).catch(()=>null);
+      const absoluteStateUrl=new URL(stateUrl,location.href).href;
+      const nativeFetch=window.fetch.bind(window);
+      const prefetch=nativeFetch(stateUrl,{headers:{Accept:'application/json'}}).then(async r=>{
+        if(!r.ok)return null;
+        const data=await r.clone().json();
+        return{data,status:r.status,statusText:r.statusText,headers:[...r.headers.entries()]};
+      }).catch(()=>null);
+      window.GMAC_STATE_PREFETCH=prefetch.then(x=>x?.data||null);
+      window.fetch=(input,init)=>{
+        let url='';try{url=new URL(typeof input==='string'?input:input?.url||'',location.href).href}catch(_){}
+        if(url===absoluteStateUrl){
+          return prefetch.then(hit=>{
+            if(!hit)return nativeFetch(input,init);
+            return new Response(JSON.stringify(hit.data),{status:hit.status||200,statusText:hit.statusText||'OK',headers:{'Content-Type':'application/json',...Object.fromEntries(hit.headers||[])}});
+          });
+        }
+        return nativeFetch(input,init);
+      };
       if(params.get('register')==='1'){
         let tries=0;
         const openWhenReady=()=>{
