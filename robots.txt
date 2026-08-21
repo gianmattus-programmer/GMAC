@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
+Disallow: /torneo.html
+
+Sitemap: https://www.gmactorneos.lat/sitemap.xml
