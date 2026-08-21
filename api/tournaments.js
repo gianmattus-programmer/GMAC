@@ -43,6 +43,14 @@ function formatTimeValue(value) {
   return raw;
 }
 
+function formatMoneyValue(value, fallback = 'Por anunciar') {
+  const raw = clean(value);
+  if (!raw) return fallback;
+  if (/por anunciar|por definir/i.test(raw)) return raw;
+  if (/^\d+(?:[.,]\d{1,2})?$/.test(raw)) return `S/ ${raw.replace(',', '.')}`;
+  return raw;
+}
+
 function formatFinishedAt(value) {
   const raw = clean(value);
   if (!raw) return '';
@@ -51,7 +59,7 @@ function formatFinishedAt(value) {
   return new Intl.DateTimeFormat('es-PE', {
     timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: false
-  }).format(parsed);
+  }).format(parsed).replace(', ', ' · ');
 }
 
 function setImageHeaders(res, type, length, cacheSeconds = 604800) {
@@ -194,12 +202,19 @@ module.exports = async (req, res) => {
       const winnerRecord = winnerByTournament.get(String(t.id || '')) || {};
       const rawChampionCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
       const championCover = rawChampionCover ? `/media/champion/${encodeURIComponent(String(t.id || ''))}` : '';
+      const prizeFirst = formatMoneyValue(t.prizeFirst ?? t.prize, 'Por anunciar');
+      const prizeSecond = formatMoneyValue(t.prizeSecond, 'Por anunciar');
+      const entry = formatMoneyValue(t.entry, 'Por anunciar');
       return {
         ...t,
         game: t.game || game,
         date: formatDateValue(t.date),
         time: formatTimeValue(t.time),
         finishedAt: formatFinishedAt(t.finishedAt),
+        prize: prizeFirst,
+        prizeFirst,
+        prizeSecond,
+        entry,
         trophyCover,
         trophyFixture,
         trophy: trophyCover,
