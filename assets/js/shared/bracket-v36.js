@@ -1,0 +1,111 @@
+(()=>{
+'use strict';
+const $=(q,el=document)=>el.querySelector(q);
+const $$=(q,el=document)=>[...el.querySelectorAll(q)];
+const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const upper=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+let raf=0;
+
+function editionNumber(){
+  const direct=clean($('[data-detail-edition]')?.textContent);
+  let m=direct.match(/(\d+)/);if(m)return Number(m[1]);
+  const selected=clean($('[data-selected-tournament]')?.textContent);
+  m=selected.match(/EDICI[ÓO]N\s*(\d+)/i);if(m)return Number(m[1]);
+  const id=new URLSearchParams(location.search).get('id')||'';
+  m=id.match(/(?:e|edicion|edition)[-_]?(\d+)$/i);return m?Number(m[1]):0;
+}
+function editionLabel(n){
+  if(!n)return'EDICIÓN';
+  const suffix=n===1?'ERA':n===2?'DA':n===3?'ERA':'TA';
+  return `${n}${suffix} EDICIÓN`;
+}
+function playerData(row){
+  if(!row)return{name:'Por definir',score:'',penalty:'',empty:true};
+  const name=clean($(':scope > span',row)?.textContent)||'Por definir';
+  const score=clean($('.gm-inline-score',row)?.textContent);
+  const ptxt=clean($('.gm-inline-penalty',row)?.textContent);
+  const pm=ptxt.match(/-?\d+/);
+  return{name,score,penalty:pm?pm[0]:'',empty:row.classList.contains('gm-fixture-empty')||!clean($(':scope > span',row)?.textContent)};
+}
+function matchData(match){
+  const rows=$$('.gm-fixture-player',match);
+  return{p1:playerData(rows[0]),p2:playerData(rows[1]),source:match};
+}
+function playerHTML(p){
+  const hasPen=p.penalty!=='';
+  return `<div class="gm-v36-player${hasPen?' has-penalty':''}${p.empty?' is-empty':''}"><span class="gm-v36-player__name" title="${esc(p.name)}">${esc(p.name)}</span><b class="gm-v36-score">${esc(p.score||'—')}</b>${hasPen?`<b class="gm-v36-penalty" title="Penales">${esc(p.penalty)}</b>`:''}</div>`;
+}
+function matchHTML(match,{final=false}={}){
+  const d=matchData(match);
+  return `<article class="gm-v36-match${final?' is-final':''}" data-v36-match>${playerHTML(d.p1)}${playerHTML(d.p2)}</article>`;
+}
+function roundTitle(round){return clean($('.gm-fixture-round__title',round)?.textContent)||'RONDA'}
+function roundMatches(round){return $$('.gm-fixture-match',round)}
+function trophySrc(finalRound){
+  return $('.gm-final-cup img',finalRound)?.getAttribute('src')||$('[data-fixture-cup] img')?.getAttribute('src')||'';
+}
+function makeColumn(round,idx,side,matches,height){
+  const col=document.createElement('section');
+  col.className=`gm-v36-round gm-v36-round--${side}`;
+  col.dataset.side=side;col.dataset.roundIndex=String(idx);col.style.setProperty('--v36-height',`${height}px`);col.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
+  col.innerHTML=`<h4 class="gm-v36-round__title">${esc(roundTitle(round))}</h4><div class="gm-v36-round__matches">${matches.map(m=>matchHTML(m)).join('')}</div>`;
+  return col;
+}
+function enhance(source){
+  if(!source||source.dataset.v36Enhanced==='1')return;
+  const rounds=$$('.gm-fixture-round',source);
+  const finalIndex=rounds.findIndex(r=>upper(roundTitle(r))==='FINAL');
+  if(finalIndex<1)return;
+  const finalRound=rounds[finalIndex];
+  const finalMatch=roundMatches(finalRound)[0];if(!finalMatch)return;
+  const competitive=rounds.slice(0,finalIndex).filter(r=>!upper(roundTitle(r)).includes('TERCER'));
+  if(!competitive.length)return;
+  const firstCount=roundMatches(competitive[0]).length;
+  if(firstCount<2||firstCount%2!==0)return;
+  const height=Math.max(520,Math.ceil(firstCount/2)*94+120);
+  const shell=document.createElement('div');shell.className='gm-v36-bracket-shell';shell.tabIndex=0;shell.setAttribute('aria-label','Fixture eliminatorio desplazable');
+  const hint=document.createElement('div');hint.className='gm-v36-scroll-hint';hint.textContent='Desliza horizontalmente para ver todo el fixture';
+  const bracket=document.createElement('div');bracket.className='gm-v36-bracket';bracket.dataset.gmacBracket='';bracket.style.setProperty('--v36-height',`${height}px`);bracket.style.gridTemplateColumns=`repeat(${competitive.length},var(--v36-round-w)) var(--v36-final-w) repeat(${competitive.length},var(--v36-round-w))`;
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','gm-v36-connectors');svg.setAttribute('aria-hidden','true');bracket.appendChild(svg);
+  competitive.forEach((round,idx)=>{const all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'left',all.slice(0,half),height))});
+  const center=document.createElement('section');center.className='gm-v36-final-column';center.dataset.v36Final='';center.style.setProperty('--v36-height',`${height}px`);center.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
+  const cup=trophySrc(finalRound),ed=editionLabel(editionNumber());
+  center.innerHTML=`<div class="gm-v36-final-card"><div class="gm-v36-final-grid"><div class="gm-v36-final-meta"><b>FINAL</b><span>${esc(ed)}</span></div><div class="gm-v36-trophy">${cup?`<img src="${esc(cup)}" alt="Copa del torneo" decoding="async">`:'<span>COPA GMAC</span>'}</div><div class="gm-v36-final-match">${matchHTML(finalMatch,{final:true})}</div></div></div>`;
+  bracket.appendChild(center);
+  [...competitive].reverse().forEach((round,rev)=>{const idx=competitive.length-1-rev,all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'right',all.slice(half),height))});
+  const third=rounds.find(r=>upper(roundTitle(r)).includes('TERCER'));
+  if(third&&roundMatches(third)[0]){const box=document.createElement('div');box.className='gm-v36-third-place';box.innerHTML=matchHTML(roundMatches(third)[0]);bracket.appendChild(box)}
+  shell.append(hint,bracket);source.insertAdjacentElement('beforebegin',shell);source.classList.add('gm-v36-source-hidden');source.dataset.v36Enhanced='1';source.setAttribute('aria-hidden','true');
+  requestAnimationFrame(()=>draw(bracket));
+}
+function point(el,host,edge){
+  const r=el.getBoundingClientRect(),h=host.getBoundingClientRect();
+  return{x:(edge==='left'?r.left:edge==='right'?r.right:r.left+r.width/2)-h.left,y:r.top+r.height/2-h.top};
+}
+function path(svg,a,b){
+  const mid=(a.x+b.x)/2;const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',`M ${a.x.toFixed(1)} ${a.y.toFixed(1)} H ${mid.toFixed(1)} V ${b.y.toFixed(1)} H ${b.x.toFixed(1)}`);svg.appendChild(p);
+}
+function draw(bracket){
+  if(!bracket?.isConnected)return;
+  const svg=$('.gm-v36-connectors',bracket);if(!svg)return;svg.innerHTML='';svg.setAttribute('width',bracket.scrollWidth);svg.setAttribute('height',bracket.scrollHeight);svg.setAttribute('viewBox',`0 0 ${bracket.scrollWidth} ${bracket.scrollHeight}`);
+  const indices=[...new Set($$('.gm-v36-round',bracket).map(x=>Number(x.dataset.roundIndex)))].sort((a,b)=>a-b);
+  ['left','right'].forEach(side=>{
+    for(let r=0;r<indices.length-1;r++){
+      const outer=$(`.gm-v36-round[data-side="${side}"][data-round-index="${indices[r]}"]`,bracket);const inner=$(`.gm-v36-round[data-side="${side}"][data-round-index="${indices[r+1]}"]`,bracket);if(!outer||!inner)continue;
+      const a=$$('[data-v36-match]',outer),b=$$('[data-v36-match]',inner);
+      a.forEach((m,i)=>{const target=b[Math.floor(i/2)];if(!target)return;path(svg,point(m,bracket,side==='left'?'right':'left'),point(target,bracket,side==='left'?'left':'right'))});
+    }
+    const last=$(`.gm-v36-round[data-side="${side}"][data-round-index="${indices.at(-1)}"]`,bracket);const semi=$('[data-v36-match]',last);const final=$('[data-v36-final] [data-v36-match]',bracket);if(semi&&final)path(svg,point(semi,bracket,side==='left'?'right':'left'),point(final,bracket,side==='left'?'left':'right'));
+  });
+}
+function enhanceAll(){
+  $$('.gm-fixture--knockout').forEach(enhance);
+  cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>$$('[data-gmac-bracket]').forEach(draw));
+}
+window.GMAC_ENHANCE_BRACKETS=enhanceAll;
+const obs=new MutationObserver(()=>enhanceAll());
+const root=$('[data-fixture]')||document.body;obs.observe(root,{childList:true,subtree:true});
+addEventListener('resize',()=>{clearTimeout(window.__gmacV36Resize);window.__gmacV36Resize=setTimeout(()=>$$('[data-gmac-bracket]').forEach(draw),120)},{passive:true});
+enhanceAll();
+})();
