@@ -12,6 +12,11 @@ const ACTIONS = {
   'set-registrations': 'setRegistrations',
   'snapshot': 'adminSnapshot',
   'finalize-tournament': 'finalizeTournament',
+  'update-participant': 'updateParticipant',
+  'set-participant-status': 'setParticipantStatus',
+  'replace-participant': 'replaceParticipant',
+  'set-code-status': 'setCodeStatus',
+  'regenerate-code': 'regenerateCode',
 };
 
 function payloadFor(route, body = {}) {
@@ -32,6 +37,34 @@ function payloadFor(route, body = {}) {
         runnerUp: body.runnerUp,
         confirm: body.confirm,
       };
+    case 'update-participant':
+      return {
+        tournamentId: body.tournamentId,
+        originalNick: body.originalNick,
+        newNick: body.newNick,
+        name: body.name,
+        contact: body.contact,
+        location: body.location,
+        tiktok: body.tiktok,
+        photoUrl: body.photoUrl,
+      };
+    case 'set-participant-status':
+      return { tournamentId: body.tournamentId, nick: body.nick, status: body.status };
+    case 'replace-participant':
+      return {
+        tournamentId: body.tournamentId,
+        originalNick: body.originalNick,
+        nick: body.nick,
+        name: body.name,
+        contact: body.contact,
+        location: body.location,
+        tiktok: body.tiktok,
+        photoUrl: body.photoUrl,
+      };
+    case 'set-code-status':
+      return { tournamentId: body.tournamentId, code: body.code, status: body.status };
+    case 'regenerate-code':
+      return { tournamentId: body.tournamentId, code: body.code };
     default:
       return body || {};
   }
