@@ -32,7 +32,7 @@ async function tournamentMeta(){
   metaCache.set(key,pending);return pending;
 }
 function editionNumber(meta=null){
-  const direct=clean($('[data-detail-edition]')?.textContent);
+  const direct=clean($('[data-detail-edition]:not([data-v36-edition-marker])')?.textContent);
   let m=direct.match(/(\d+)/);if(m)return Number(m[1]);
   const selected=clean($('[data-selected-tournament]')?.dataset?.edition)||clean($('[data-selected-tournament]')?.textContent);
   m=selected.match(/EDICI[ÓO]N\s*(\d+)/i)||selected.match(/^(\d+)$/);if(m)return Number(m[1]);
@@ -43,6 +43,12 @@ function editionLabel(n){
   if(!n)return'EDICIÓN';
   const suffix={1:'ERA',2:'DA',3:'ERA',4:'TA',5:'TA',6:'TA',7:'MA',8:'VA',9:'NA',10:'MA'}[Number(n)]||'TA';
   return `${n}${suffix} EDICIÓN`;
+}
+function syncEditionMarker(bracket,edition){
+  if(!bracket||!edition)return;
+  let marker=$('[data-v36-edition-marker]',bracket);
+  if(!marker){marker=document.createElement('span');marker.hidden=true;marker.dataset.v36EditionMarker='';marker.dataset.detailEdition='';bracket.appendChild(marker)}
+  marker.textContent=`EDICIÓN ${edition}`;
 }
 function displayRoundTitle(value){
   const raw=upper(value);
@@ -91,7 +97,7 @@ async function hydrateMeta(bracket,finalRound){
   if(!bracket?.isConnected)return;
   const meta=await tournamentMeta();if(!bracket?.isConnected)return;
   const edition=editionNumber(meta),cup=trophySrc(finalRound,meta);
-  if(edition){bracket.dataset.edition=String(edition);const label=$('.gm-v36-final-meta span',bracket);if(label)label.textContent=editionLabel(edition)}
+  if(edition){bracket.dataset.edition=String(edition);syncEditionMarker(bracket,edition);const label=$('.gm-v36-final-meta span',bracket);if(label)label.textContent=editionLabel(edition)}
   if(cup){
     bracket.dataset.trophyFixture=cup;
     const host=$('.gm-v36-trophy',bracket);if(host){let img=$('img',host);if(!img){host.innerHTML='<img alt="Copa del torneo" decoding="async">';img=$('img',host)}if(img&&img.getAttribute('src')!==cup)img.setAttribute('src',cup)}
@@ -114,7 +120,7 @@ function enhance(source){
   const shell=document.createElement('div');shell.className='gm-v36-bracket-shell';shell.tabIndex=0;shell.setAttribute('aria-label','Fixture eliminatorio desplazable');
   const hint=document.createElement('div');hint.className='gm-v36-scroll-hint';hint.textContent='Desliza horizontalmente para ver todo el fixture';
   const bracket=document.createElement('div');bracket.className='gm-v36-bracket';bracket.dataset.gmacBracket='';bracket.style.setProperty('--v36-height',`${height}px`);bracket.style.gridTemplateColumns=`repeat(${competitive.length},var(--v36-round-w)) var(--v36-final-w) repeat(${competitive.length},var(--v36-round-w))`;
-  const id=tournamentId(),local=localTournament(id,pageGame()),initialEdition=editionNumber(local),initialCup=trophySrc(finalRound,local);if(id)bracket.dataset.tournamentId=id;if(initialEdition)bracket.dataset.edition=String(initialEdition);if(initialCup)bracket.dataset.trophyFixture=initialCup;
+  const id=tournamentId(),local=localTournament(id,pageGame()),initialEdition=editionNumber(local),initialCup=trophySrc(finalRound,local);if(id)bracket.dataset.tournamentId=id;if(initialEdition){bracket.dataset.edition=String(initialEdition);syncEditionMarker(bracket,initialEdition)}if(initialCup)bracket.dataset.trophyFixture=initialCup;
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','gm-v36-connectors');svg.setAttribute('aria-hidden','true');bracket.appendChild(svg);
   competitive.forEach((round,idx)=>{const all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'left',all.slice(0,half),height))});
   const center=document.createElement('section');center.className='gm-v36-final-column';center.dataset.v36Final='';center.style.setProperty('--v36-height',`${height}px`);center.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
