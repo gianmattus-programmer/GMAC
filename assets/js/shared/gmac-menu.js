@@ -22,8 +22,8 @@
     if(!document.querySelector('link[data-gmac-bracket-v36]')){
       const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.0';css.dataset.gmacBracketV36='';document.head.appendChild(css);
     }
-    const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.0';bracket.async=false;document.head.appendChild(bracket);
-    const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-history-pdf-v36.js?v=36.0';pdf.async=false;document.head.appendChild(pdf);
+    const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.6';bracket.async=false;document.head.appendChild(bracket);
+    const pdf=document.createElement('script');pdf.src='assets/js/shared/fixture-history-pdf-v37.js?v=37.0';pdf.async=false;document.head.appendChild(pdf);
   }
   if(currentGame==='fc-mobile'||currentGame==='efootball'){
     const participant=document.createElement('script');
