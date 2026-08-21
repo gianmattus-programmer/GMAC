@@ -1,0 +1,136 @@
+name: Optimize GMAC trophy assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/cups/**/*.png'
+      - '.github/workflows/optimize-cups.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install image encoder
+        run: npm install --no-save --no-package-lock sharp@0.34.3
+
+      - name: Convert trophies to AVIF and tune frontend
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const sharp = require('sharp');
+
+          function walk(dir, out = []) {
+            if (!fs.existsSync(dir)) return out;
+            for (const name of fs.readdirSync(dir)) {
+              const full = path.join(dir, name);
+              const stat = fs.statSync(full);
+              if (stat.isDirectory()) walk(full, out);
+              else out.push(full);
+            }
+            return out;
+          }
+
+          async function convertCups() {
+            const pngs = walk('assets/cups').filter(file => file.toLowerCase().endsWith('.png'));
+            for (const file of pngs) {
+              const out = file.replace(/\.png$/i, '.avif');
+              await sharp(file)
+                .avif({ quality: 82, effort: 4, chromaSubsampling: '4:4:4' })
+                .toFile(out);
+              fs.unlinkSync(file);
+            }
+            console.log(`Converted ${pngs.length} trophy PNG files to AVIF.`);
+          }
+
+          function updateCupReferences() {
+            const allowed = new Set(['.js','.html','.csv','.md','.json','.txt','.gs','.css']);
+            const files = walk('.').filter(file => {
+              if (file.includes(`${path.sep}.git${path.sep}`) || file.includes(`${path.sep}node_modules${path.sep}`)) return false;
+              return allowed.has(path.extname(file).toLowerCase());
+            });
+            const cupRef = /assets\/cups\/([^"'`\s)]+)\.png/g;
+            for (const file of files) {
+              let text;
+              try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
+              const next = text.replace(cupRef, 'assets/cups/$1.avif');
+              if (next !== text) fs.writeFileSync(file, next);
+            }
+          }
+
+          function tuneRegistration() {
+            const file = 'assets/js/tournaments/registration.js';
+            let text = fs.readFileSync(file, 'utf8');
+            text = text.replace(
+              "if(Array.isArray(data.tournaments)&&data.tournaments.length){list=data.tournaments.filter(t=>page!=='fc-mobile'||String(t?.trophyCover||t?.trophy||'').trim());render(currentFilter)}",
+              "if(Array.isArray(data.tournaments)&&data.tournaments.length){const nextList=data.tournaments.filter(t=>page!=='fc-mobile'||String(t?.trophyCover||t?.trophy||'').trim());if(JSON.stringify(nextList)!==JSON.stringify(list)){list=nextList;render(currentFilter)}}"
+            );
+            text = text.replace('setInterval(loadLiveTournaments,15000);', 'setInterval(loadLiveTournaments,60000);');
+            text = text.replace('    },15000);\n  }\n\n  function participantSlots', '    },30000);\n  }\n\n  function participantSlots');
+            text = text.replace(/loading="lazy">/g, 'loading="lazy" decoding="async" fetchpriority="low">');
+            text = text.replace('<img src="${esc(trophy)}" alt="Copa minimalista', '<img decoding="async" fetchpriority="low" src="${esc(trophy)}" alt="Copa minimalista');
+            fs.writeFileSync(file, text);
+          }
+
+          function tuneDetail() {
+            const file = 'assets/js/tournaments/detail.js';
+            let text = fs.readFileSync(file, 'utf8');
+            text = text.replace('if(live){list=liveList;tournament=live;render(live)}', 'if(live){const changed=JSON.stringify(liveList)!==JSON.stringify(list);list=liveList;tournament=live;if(changed)render(live)}');
+            text = text.replace('setInterval(refresh,15000);', 'setInterval(refresh,60000);');
+            text = text.replace('return `<img src="${esc(src)}" alt="Copa de ${esc(t.title)}">`', 'return `<img decoding="async" src="${esc(src)}" alt="Copa de ${esc(t.title)}">`');
+            fs.writeFileSync(file, text);
+          }
+
+          function tuneHome() {
+            const file = 'assets/js/home/index.js';
+            let text = fs.readFileSync(file, 'utf8');
+            text = text.replace(/loading="lazy">/g, 'loading="lazy" decoding="async" fetchpriority="low">');
+            text = text.replace(
+              "if(image){image.src=slide.src;image.alt=slide.alt}",
+              "if(image){image.decoding='async';image.src=slide.src;image.alt=slide.alt;const nextSlide=trophySlides[(trophyIndex+1)%trophySlides.length];if(nextSlide?.src){const preload=new Image();preload.decoding='async';preload.src=nextSlide.src}}"
+            );
+            fs.writeFileSync(file, text);
+          }
+
+          (async () => {
+            await convertCups();
+            updateCupReferences();
+            tuneRegistration();
+            tuneDetail();
+            tuneHome();
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Remove temporary dependencies
+        run: rm -rf node_modules
+
+      - name: Commit optimized assets
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git config user.name "GMAC Performance Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "V31: serve trophy AVIFs from Vercel CDN"
+          git push origin HEAD:main

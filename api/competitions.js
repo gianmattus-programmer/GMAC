@@ -1,41 +1,41 @@
 const { getAction } = require('../lib/apps-script');
+const { trophyUrl } = require('../lib/trophy-assets');
 
-const DRIVE_ID_RE = /^[A-Za-z0-9_-]{10,}$/;
-
-function driveId(value) {
-  const text = String(value || '').trim();
-  if (DRIVE_ID_RE.test(text) && !text.includes('http')) return text;
-  const query = text.match(/[?&]id=([A-Za-z0-9_-]+)/);
-  if (query) return query[1];
-  const path = text.match(/\/d\/([A-Za-z0-9_-]+)/);
-  return path ? path[1] : '';
+function setJsonCache(res, seconds = 3600) {
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', `public, max-age=${seconds}`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=86400`);
 }
 
-function mediaUrl(...values) {
+function firstTrophyUrl(...values) {
   for (const value of values) {
-    const id = driveId(value);
-    if (id) return `/media/trophy/${id}`;
+    if (!value) continue;
+    const url = trophyUrl(value);
+    if (url) return url;
   }
-  return values.find(Boolean) || '';
+  return '';
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
-  res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
-
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ message: 'Método no permitido.' });
   }
 
+  setJsonCache(res, 3600);
+
   try {
     const data = await getAction('competitions', { game: req.query.game || '' });
     const competitions = (data.competitions || []).map((c) => {
-      const cover = mediaUrl(c.copa_portada_file_id, c.copa_portada_url, c.copa_portada);
-      const fixture = mediaUrl(c.copa_fixture_file_id, c.copa_fixture_url, c.copa_fixture, c.copa_portada_file_id, c.copa_portada_url, c.copa_portada);
+      const cover = firstTrophyUrl(c.copa_portada_file_id, c.copa_portada_url, c.copa_portada);
+      const fixture = firstTrophyUrl(
+        c.copa_fixture_file_id,
+        c.copa_fixture_url,
+        c.copa_fixture,
+        c.copa_portada_file_id,
+        c.copa_portada_url,
+        c.copa_portada
+      );
       return {
         ...c,
         copa_portada: cover,

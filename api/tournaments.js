@@ -1,27 +1,20 @@
 const { getAction } = require('../lib/apps-script');
+const { DRIVE_ID_RE, driveId, localCupPath, trophyUrl } = require('../lib/trophy-assets');
 
-const DRIVE_ID_RE = /^[A-Za-z0-9_-]{10,}$/;
 const TOURNAMENT_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
 
-function driveId(value) {
-  const text = String(value || '').trim();
-  if (DRIVE_ID_RE.test(text) && !text.includes('http')) return text;
-  const query = text.match(/[?&]id=([A-Za-z0-9_-]+)/);
-  if (query) return query[1];
-  const path = text.match(/\/d\/([A-Za-z0-9_-]+)/);
-  return path ? path[1] : '';
-}
-
-function mediaUrl(value) {
-  const id = driveId(value);
-  return id ? `/media/trophy/${id}` : value;
+function setJsonCache(res, seconds = 15) {
+  res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', `public, max-age=${seconds}`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=60`);
 }
 
 function setImageHeaders(res, type, length, cacheSeconds = 604800) {
   res.setHeader('Content-Type', type.startsWith('image/') ? type : 'image/jpeg');
   res.setHeader('Content-Length', String(length));
-  res.setHeader('Cache-Control', `public, max-age=86400, s-maxage=${cacheSeconds}, stale-while-revalidate=2592000`);
-  res.setHeader('Vercel-CDN-Cache-Control', `public, s-maxage=${cacheSeconds}, stale-while-revalidate=2592000`);
+  res.setHeader('Cache-Control', `public, max-age=86400, stale-while-revalidate=2592000`);
+  res.setHeader('CDN-Cache-Control', `public, max-age=${cacheSeconds}`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${cacheSeconds}, stale-while-revalidate=2592000`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
 }
 
@@ -46,6 +39,12 @@ async function serveTrophy(id, res) {
     return res.status(400).json({ message: 'ID de copa inválido.' });
   }
 
+  const local = localCupPath(id);
+  if (local) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.redirect(308, local);
+  }
+
   const candidates = [
     `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`,
     `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}&confirm=t`,
@@ -55,7 +54,7 @@ async function serveTrophy(id, res) {
   let lastError = null;
   for (const url of candidates) {
     try {
-      const { type, bytes } = await fetchImage(url, 'Mozilla/5.0 GMAC-Trophy-Proxy/1.0');
+      const { type, bytes } = await fetchImage(url, 'Mozilla/5.0 GMAC-Trophy-Proxy/2.0');
       setImageHeaders(res, type, bytes.length);
       return res.status(200).send(bytes);
     } catch (error) {
@@ -128,11 +127,7 @@ module.exports = async (req, res) => {
     return serveChampion(String(req.query.champion), res);
   }
 
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
-  res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
+  setJsonCache(res, 15);
 
   try {
     const game = req.query.game || '';
@@ -146,8 +141,8 @@ module.exports = async (req, res) => {
     );
 
     const tournaments = (data.tournaments || []).map((t) => {
-      const trophyCover = mediaUrl(t.trophyCover || t.trophy || '');
-      const trophyFixture = mediaUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
+      const trophyCover = trophyUrl(t.trophyCover || t.trophy || '');
+      const trophyFixture = trophyUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
       const winnerRecord = winnerByTournament.get(String(t.id || '')) || {};
       const rawChampionCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
       const championCover = rawChampionCover ? `/media/champion/${encodeURIComponent(String(t.id || ''))}` : '';
