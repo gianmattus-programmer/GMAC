@@ -22,18 +22,63 @@
     return nativeSetInterval(fn,delay,...args);
   };
 
+  function fixtureModal(){return document.querySelector('.gm-modal')}
+  function fixtureOnlyMode(){
+    const modal=fixtureModal();if(!modal)return;
+    modal.classList.add('gm-modal--fixture-only');
+    const tag=modal.querySelector('.gm-modal__head .gm-tag');if(tag)tag.textContent='FIXTURE COMPLETO';
+    const note=modal.querySelector('.gm-note');if(note)note.hidden=true;
+    const code=modal.querySelector('#access-code');const codeField=code?.closest('.gm-field');if(codeField)codeField.hidden=true;
+    const feedback=modal.querySelector('[data-feedback]');if(feedback)feedback.hidden=true;
+    const reg=modal.querySelector('.gm-registration');if(reg)reg.hidden=true;
+    setTimeout(()=>{if(document.activeElement===code)code.blur();window.GMAC_ENHANCE_BRACKETS?.()},80);
+  }
+  function registrationMode(){
+    const modal=fixtureModal();if(!modal||!modal.classList.contains('gm-modal--fixture-only'))return;
+    modal.classList.remove('gm-modal--fixture-only');
+    const tag=modal.querySelector('.gm-modal__head .gm-tag');if(tag)tag.textContent='INSCRIPCIÓN CON CÓDIGO';
+    const note=modal.querySelector('.gm-note');if(note)note.hidden=false;
+    const code=modal.querySelector('#access-code');const codeField=code?.closest('.gm-field');if(codeField)codeField.hidden=false;
+    const feedback=modal.querySelector('[data-feedback]');if(feedback)feedback.hidden=false;
+    const reg=modal.querySelector('.gm-registration');if(reg)reg.hidden=false;
+  }
+  function syncFixtureShortcuts(){
+    document.querySelectorAll('.gm-register-mini[data-register]').forEach(btn=>{
+      btn.title='Ver fixture completo';
+      btn.setAttribute('aria-label','Ver fixture completo del torneo');
+    });
+  }
+  function openFixture(id){
+    id=String(id||'').trim();if(!id)return;
+    if(typeof window.GM_OPEN_TOURNAMENT==='function'){
+      try{
+        const pending=window.GM_OPEN_TOURNAMENT(id);
+        fixtureOnlyMode();
+        Promise.resolve(pending).then(()=>{fixtureOnlyMode();window.GMAC_ENHANCE_BRACKETS?.()}).catch(()=>{});
+        return;
+      }catch(_){}
+    }
+    location.assign(`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&fixture=1#competicion`);
+  }
+
   if(validGame){
     document.querySelectorAll('.rail-game-link,.mobile-game-links a').forEach(a=>{
       const active=a.getAttribute('href')?.startsWith(currentGame+'.html');
       a.classList.toggle('is-current',!!active);
       if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
     });
+    syncFixtureShortcuts();
+    const grid=document.querySelector('[data-tournament-grid]');
+    if(grid)new MutationObserver(syncFixtureShortcuts).observe(grid,{childList:true,subtree:true});
     document.addEventListener('click',e=>{
       const btn=e.target.closest?.('.gm-register-mini[data-register]');
       if(!btn)return;
       e.preventDefault();e.stopImmediatePropagation();
-      const id=String(btn.dataset.register||'').trim();if(!id)return;
-      location.assign(`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&register=1#competicion`);
+      openFixture(btn.dataset.register);
+    },true);
+    document.addEventListener('click',e=>{
+      const btn=e.target.closest?.('[data-detail-register]');if(!btn)return;
+      registrationMode();
     },true);
   }
 
@@ -59,11 +104,22 @@
         }
         return nativeFetch(input,init);
       };
-      if(params.get('register')==='1'){
+      const autoFixture=params.get('fixture')==='1';
+      const autoRegister=params.get('register')==='1';
+      if(autoFixture||autoRegister){
         let tries=0;
         const openWhenReady=()=>{
+          if(autoFixture&&String(document.querySelector('[data-detail-status]')?.textContent||'').toUpperCase().includes('FINALIZADO')){
+            const btn=document.querySelector('[data-detail-register]');
+            if(btn&&/VER FIXTURE/i.test(btn.textContent||'')){btn.click();return}
+            if(++tries<100)setTimeout(openWhenReady,60);
+            return;
+          }
           if(typeof window.GM_OPEN_TOURNAMENT==='function'){
-            try{window.GM_OPEN_TOURNAMENT(id)}catch(_){}
+            try{
+              const pending=window.GM_OPEN_TOURNAMENT(id);
+              if(autoFixture){fixtureOnlyMode();Promise.resolve(pending).then(()=>fixtureOnlyMode()).catch(()=>{})}
+            }catch(_){}
             return;
           }
           if(++tries<80)setTimeout(openWhenReady,50);
