@@ -2,11 +2,56 @@ const { getAction } = require('../lib/apps-script');
 const { DRIVE_ID_RE, driveId, localCupPath, trophyUrl } = require('../lib/trophy-assets');
 
 const TOURNAMENT_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
-function setJsonCache(res, seconds = 15) {
+function setJsonCache(res, seconds = 60) {
   res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   res.setHeader('CDN-Cache-Control', `public, max-age=${seconds}`);
-  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=60`);
+  res.setHeader('Vercel-CDN-Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=300`);
+}
+
+function clean(value) {
+  return String(value ?? '').trim();
+}
+
+function formatDateValue(value) {
+  const raw = clean(value);
+  if (!raw || /por definir/i.test(raw)) return raw || 'Por definir';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw) || /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    if (/^\d{4}-/.test(raw)) {
+      const [y,m,d] = raw.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return raw;
+  }
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Intl.DateTimeFormat('es-PE', {
+      timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric'
+    }).format(parsed);
+  }
+  return raw;
+}
+
+function formatTimeValue(value) {
+  const raw = clean(value);
+  if (!raw || /por definir/i.test(raw)) return raw || 'Por definir';
+  const direct = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (direct) return `${direct[1].padStart(2,'0')}:${direct[2]}`;
+  const embedded = raw.match(/\b(\d{1,2}):(\d{2}):\d{2}\b/);
+  if (embedded) return `${embedded[1].padStart(2,'0')}:${embedded[2]}`;
+  return raw;
+}
+
+function formatFinishedAt(value) {
+  const raw = clean(value);
+  if (!raw) return '';
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return new Intl.DateTimeFormat('es-PE', {
+    timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(parsed);
 }
 
 function setImageHeaders(res, type, length, cacheSeconds = 604800) {
@@ -29,8 +74,11 @@ async function fetchImage(url, userAgent) {
   if (!upstream.ok) throw new Error(`El proveedor de imagen respondió ${upstream.status}.`);
   const type = String(upstream.headers.get('content-type') || '').toLowerCase();
   if (!type.startsWith('image/')) throw new Error('El proveedor no devolvió una imagen.');
+  const declared = Number(upstream.headers.get('content-length') || 0);
+  if (declared > MAX_IMAGE_BYTES) throw new Error('La imagen supera el tamaño permitido.');
   const bytes = Buffer.from(await upstream.arrayBuffer());
   if (!bytes.length) throw new Error('La imagen llegó vacía.');
+  if (bytes.length > MAX_IMAGE_BYTES) throw new Error('La imagen supera el tamaño permitido.');
   return { type, bytes };
 }
 
@@ -127,7 +175,7 @@ module.exports = async (req, res) => {
     return serveChampion(String(req.query.champion), res);
   }
 
-  setJsonCache(res, 15);
+  setJsonCache(res, 60);
 
   try {
     const game = req.query.game || '';
@@ -149,6 +197,9 @@ module.exports = async (req, res) => {
       return {
         ...t,
         game: t.game || game,
+        date: formatDateValue(t.date),
+        time: formatTimeValue(t.time),
+        finishedAt: formatFinishedAt(t.finishedAt),
         trophyCover,
         trophyFixture,
         trophy: trophyCover,
