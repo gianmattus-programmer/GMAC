@@ -1,5 +1,6 @@
-const { postAction } = require('../lib/apps-script');
+const { getAction, postAction } = require('../lib/apps-script');
 const { requireAdminRequest } = require('../lib/admin-session');
+const { enforceBodySize } = require('../lib/request-guards');
 
 const ACTIONS = {
   'activate-tournament': 'activateTournament',
@@ -36,6 +37,12 @@ function nonNegativeInteger(value, label) {
     throw new Error(`${label} debe ser un número entero igual o mayor que 0.`);
   }
   return number;
+}
+
+function boundedText(value, label, max = 120, fallback = '') {
+  const text = String(value ?? '').trim() || fallback;
+  if (text.length > max) throw new Error(`${label} supera el máximo de ${max} caracteres.`);
+  return text;
 }
 
 function drawAllowed(stage) {
@@ -78,6 +85,33 @@ function saveResultPayload(body = {}) {
     throw new Error('Los penales deben definir un ganador.');
   }
   return payload;
+}
+
+async function createTournamentPayload(body = {}) {
+  const competitionId = boundedText(body.competitionId || body.competition_id, 'Competición', 100);
+  if (!competitionId) throw new Error('Selecciona una competición.');
+
+  const data = await getAction('competitions', {});
+  const competition = (data.competitions || []).find((c) => String(c.competition_id || '') === competitionId);
+  if (!competition) throw new Error('La competición seleccionada ya no existe. Actualiza el panel.');
+
+  const expectedSlots = Number(competition.participantes_defecto);
+  const requestedSlots = Number(body.slots || expectedSlots);
+  if (!Number.isInteger(expectedSlots) || expectedSlots < 2) throw new Error('La competición tiene una cantidad de participantes inválida en Google Sheets.');
+  if (!Number.isInteger(requestedSlots) || requestedSlots < 2) throw new Error('La cantidad de participantes no es válida.');
+  if (requestedSlots !== expectedSlots) {
+    throw new Error(`Esta competición está configurada para ${expectedSlots} participantes. Para usar otro cupo crea una competición con ese formato.`);
+  }
+
+  return {
+    competitionId,
+    slots: expectedSlots,
+    date: boundedText(body.date || body.fecha, 'Fecha', 40, 'Por definir'),
+    time: boundedText(body.time || body.hora, 'Hora', 40, 'Por definir'),
+    entry: boundedText(body.entry || body.inscripcion, 'Inscripción', 80, 'Por anunciar'),
+    prizeFirst: boundedText(body.prizeFirst || body.premio_1, 'Premio 1.º', 80, 'Por anunciar'),
+    prizeSecond: boundedText(body.prizeSecond || body.premio_2, 'Premio 2.º', 80, 'Por anunciar'),
+  };
 }
 
 function payloadFor(route, body = {}) {
@@ -140,6 +174,7 @@ module.exports = async (req, res) => {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ message: 'Método no permitido.' });
   }
+  if (!enforceBodySize(req, res, 32 * 1024)) return;
 
   if (!requireAdminRequest(req)) {
     return res.status(401).json({ message: 'Sesión administrativa requerida.' });
@@ -152,7 +187,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const data = await postAction(action, payloadFor(route, req.body || {}), process.env.ADMIN_SECRET);
+    const body = req.body || {};
+    const payload = route === 'create-tournament' ? await createTournamentPayload(body) : payloadFor(route, body);
+    const data = await postAction(action, payload, process.env.ADMIN_SECRET);
     return res.status(200).json(data);
   } catch (error) {
     return res.status(400).json({ message: error.message });
