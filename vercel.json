@@ -26,7 +26,31 @@
     {
       "source": "/assets/champions/:path*",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    },
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
+      "source": "/torneo.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, follow" }
       ]
     },
     {
