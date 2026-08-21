@@ -33,5 +33,5 @@ jobs:
 
       - name: Verify GMAC production
         env:
-          GMAC_BASE_URL: https://gmac-iota.vercel.app
+          GMAC_BASE_URL: https://www.gmactorneos.lat
         run: node scripts/production-smoke.mjs
