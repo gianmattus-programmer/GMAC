@@ -1,0 +1,44 @@
+name: Snapshot Finalized GMAC History
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gmac-history-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Capture finalized tournaments
+        env:
+          GMAC_BASE_URL: https://gmac-iota.vercel.app
+        run: node scripts/snapshot-finalized-history.mjs
+
+      - name: Commit new immutable history
+        run: |
+          if git diff --quiet -- data/history/index.json; then
+            echo "No new snapshots."
+            exit 0
+          fi
+          git config user.name "GMAC History Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/history/index.json
+          git commit -m "history: archive finalized tournament snapshot"
+          git pull --rebase origin main
+          git push origin HEAD:main
