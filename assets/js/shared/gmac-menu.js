@@ -14,8 +14,6 @@
   const currentGame=queryGame||document.body.dataset.game||'';
   const validGame=currentGame==='fc-mobile'||currentGame==='efootball';
 
-  // El historial finalizado es de solo lectura. Evita que registration.js cree
-  // su polling de 30 s cuando el modal ya fue convertido en historial.
   const nativeSetInterval=window.setInterval.bind(window);
   window.setInterval=(fn,delay,...args)=>{
     if(Number(delay)===30000&&document.querySelector('.gm-modal.gm-modal--readonly.is-open'))return 0;
@@ -42,23 +40,19 @@
     const feedback=modal.querySelector('[data-feedback]');if(feedback)feedback.hidden=false;
     const reg=modal.querySelector('.gm-registration');if(reg)reg.hidden=false;
   }
+  function fixtureHref(id){return `torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&fixture=1#competicion`}
   function syncFixtureShortcuts(){
     document.querySelectorAll('.gm-register-mini[data-register]').forEach(btn=>{
-      btn.title='Ver fixture completo';
-      btn.setAttribute('aria-label','Ver fixture completo del torneo');
+      const id=String(btn.dataset.register||'').trim();if(!id)return;
+      const link=document.createElement('a');
+      link.className=btn.className;
+      link.href=fixtureHref(id);
+      link.dataset.fixtureShortcut='1';
+      link.title='Ver fixture completo';
+      link.setAttribute('aria-label','Ver fixture completo del torneo');
+      link.innerHTML=btn.innerHTML||'＋';
+      btn.replaceWith(link);
     });
-  }
-  function openFixture(id){
-    id=String(id||'').trim();if(!id)return;
-    if(typeof window.GM_OPEN_TOURNAMENT==='function'){
-      try{
-        const pending=window.GM_OPEN_TOURNAMENT(id);
-        fixtureOnlyMode();
-        Promise.resolve(pending).then(()=>{fixtureOnlyMode();window.GMAC_ENHANCE_BRACKETS?.()}).catch(()=>{});
-        return;
-      }catch(_){}
-    }
-    location.assign(`torneo.html?game=${encodeURIComponent(currentGame)}&id=${encodeURIComponent(id)}&fixture=1#competicion`);
   }
 
   if(validGame){
@@ -70,12 +64,6 @@
     syncFixtureShortcuts();
     const grid=document.querySelector('[data-tournament-grid]');
     if(grid)new MutationObserver(syncFixtureShortcuts).observe(grid,{childList:true,subtree:true});
-    document.addEventListener('click',e=>{
-      const btn=e.target.closest?.('.gm-register-mini[data-register]');
-      if(!btn)return;
-      e.preventDefault();e.stopImmediatePropagation();
-      openFixture(btn.dataset.register);
-    },true);
     document.addEventListener('click',e=>{
       const btn=e.target.closest?.('[data-detail-register]');if(!btn)return;
       registrationMode();
