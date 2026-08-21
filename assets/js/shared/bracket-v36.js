@@ -125,7 +125,7 @@ function enhance(source){
   competitive.forEach((round,idx)=>{const all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'left',all.slice(0,half),height))});
   const center=document.createElement('section');center.className='gm-v36-final-column';center.dataset.v36Final='';center.style.setProperty('--v36-height',`${height}px`);center.style.setProperty('--v36-height-mobile',`${Math.max(500,Math.round(height*.82))}px`);
   const ed=editionLabel(initialEdition);
-  center.innerHTML=`<div class="gm-v36-final-card"><div class="gm-v36-final-grid"><div class="gm-v36-final-meta"><b>FINAL</b><span>${esc(ed)}</span></div><div class="gm-v36-trophy">${initialCup?`<img src="${esc(initialCup)}" alt="Copa del torneo" decoding="async">`:'<span>COPA PENDIENTE</span>'}</div><div class="gm-v36-final-match">${matchHTML(finalMatch,{final:true})}</div></div></div>`;
+  center.innerHTML=`<div class="gm-v36-final-stack"><div class="gm-v36-trophy gm-v36-trophy--hero">${initialCup?`<img src="${esc(initialCup)}" alt="Copa del torneo" decoding="async">`:'<span>COPA PENDIENTE</span>'}</div><div class="gm-v36-final-card"><div class="gm-v36-final-grid"><div class="gm-v36-final-meta"><b>FINAL</b><span>${esc(ed)}</span></div><div class="gm-v36-final-match">${matchHTML(finalMatch,{final:true})}</div></div></div></div>`;
   bracket.appendChild(center);
   [...competitive].reverse().forEach((round,rev)=>{const idx=competitive.length-1-rev,all=roundMatches(round),half=all.length/2;bracket.appendChild(makeColumn(round,idx,'right',all.slice(half),height))});
   const third=rounds.find(r=>upper(roundTitle(r)).includes('TERCER'));
