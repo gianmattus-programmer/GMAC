@@ -18,4 +18,10 @@
       if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
     });
   }
+  if(document.querySelector('[data-share-capture="fixture"]')||document.body.classList.contains('gm-detail-page')){
+    const script=document.createElement('script');
+    script.src='assets/js/shared/fixture-history-pdf.js?v=32.0';
+    script.async=false;
+    document.head.appendChild(script);
+  }
 })();
