@@ -1,5 +1,6 @@
 const { getAction } = require('../lib/apps-script');
 const { DRIVE_ID_RE, driveId, localCupPath, trophyUrl } = require('../lib/trophy-assets');
+const { competitionMeta } = require('../lib/competition-meta');
 const HISTORY = require('../data/history/index.json');
 
 const TOURNAMENT_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
@@ -213,6 +214,8 @@ module.exports = async (req, res) => {
 
     const tournaments = (data.tournaments || []).map((t) => {
       const tournamentId = String(t.id || '');
+      const competitionId = String(t.competitionId || t.competition_id || '');
+      const formatMeta = competitionMeta(competitionId, t);
       const trophyCover = trophyUrl(t.trophyCover || t.trophy || '');
       const trophyFixture = trophyUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
       const winnerRecord = winnerByTournament.get(tournamentId) || {};
@@ -223,6 +226,8 @@ module.exports = async (req, res) => {
       const entry = formatMoneyValue(t.entry, 'Por anunciar');
       return {
         ...t,
+        ...formatMeta,
+        competitionId,
         game: t.game || game,
         date: formatDateValue(t.date),
         time: formatTimeValue(t.time),
