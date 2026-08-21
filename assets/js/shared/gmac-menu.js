@@ -20,10 +20,10 @@
   }
   if(document.querySelector('[data-share-capture="fixture"]')||document.body.classList.contains('gm-detail-page')){
     if(!document.querySelector('link[data-gmac-bracket-v36]')){
-      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.0';css.dataset.gmacBracketV36='';document.head.appendChild(css);
+      const css=document.createElement('link');css.rel='stylesheet';css.href='assets/css/bracket-v36.css?v=36.7';css.dataset.gmacBracketV36='';document.head.appendChild(css);
     }
-    const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.6';bracket.async=false;document.head.appendChild(bracket);
-    const mirror=document.createElement('script');mirror.src='assets/js/shared/fixture-pdf-mirror-v38.js?v=38.1';mirror.async=false;document.head.appendChild(mirror);
+    const bracket=document.createElement('script');bracket.src='assets/js/shared/bracket-v36.js?v=36.7';bracket.async=false;document.head.appendChild(bracket);
+    const mirror=document.createElement('script');mirror.src='assets/js/shared/fixture-pdf-mirror-v38.js?v=38.2';mirror.async=false;document.head.appendChild(mirror);
     const history=document.createElement('script');history.src='assets/js/shared/fixture-history-pdf-v37.js?v=37.0';history.async=false;document.head.appendChild(history);
   }
   if(currentGame==='fc-mobile'||currentGame==='efootball'){
