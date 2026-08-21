@@ -1,5 +1,6 @@
 const { getAction } = require('../lib/apps-script');
 const { DRIVE_ID_RE, driveId, localCupPath, trophyUrl } = require('../lib/trophy-assets');
+const HISTORY = require('../data/history/index.json');
 
 const TOURNAMENT_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -12,6 +13,11 @@ function setJsonCache(res, seconds = 60) {
 
 function clean(value) {
   return String(value ?? '').trim();
+}
+
+function archivedChampionPath(tournamentId) {
+  const value = clean(HISTORY?.[String(tournamentId || '')]?.championPhoto);
+  return /^\/assets\/champions\/[A-Za-z0-9_.-]+$/.test(value) ? value : '';
 }
 
 function formatDateValue(value) {
@@ -152,6 +158,12 @@ async function serveChampion(tournamentId, res) {
     return res.status(400).json({ message: 'ID de torneo inválido.' });
   }
 
+  const archived = archivedChampionPath(tournamentId);
+  if (archived) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.redirect(308, archived);
+  }
+
   try {
     const source = await championPhotoFor(tournamentId);
     if (!source) return res.status(404).json({ message: 'Esta edición todavía no tiene foto de campeón.' });
@@ -186,7 +198,10 @@ module.exports = async (req, res) => {
   setJsonCache(res, 60);
 
   try {
-    const game = req.query.game || '';
+    const game = String(req.query.game || '');
+    if (game && !['fc-mobile', 'efootball'].includes(game)) {
+      return res.status(400).json({ message: 'Juego no válido.' });
+    }
     const [data, winnersData] = await Promise.all([
       getAction('tournaments', { game }),
       getAction('winners', { game }).catch(() => ({ winners: [] })),
@@ -197,11 +212,12 @@ module.exports = async (req, res) => {
     );
 
     const tournaments = (data.tournaments || []).map((t) => {
+      const tournamentId = String(t.id || '');
       const trophyCover = trophyUrl(t.trophyCover || t.trophy || '');
       const trophyFixture = trophyUrl(t.trophyFixture || t.trophyCover || t.trophy || '');
-      const winnerRecord = winnerByTournament.get(String(t.id || '')) || {};
+      const winnerRecord = winnerByTournament.get(tournamentId) || {};
       const rawChampionCover = String(t.championCover || winnerRecord.winnerPhoto || '').trim();
-      const championCover = rawChampionCover ? `/media/champion/${encodeURIComponent(String(t.id || ''))}` : '';
+      const championCover = archivedChampionPath(tournamentId) || (rawChampionCover ? `/media/champion/${encodeURIComponent(tournamentId)}` : '');
       const prizeFirst = formatMoneyValue(t.prizeFirst ?? t.prize, 'Por anunciar');
       const prizeSecond = formatMoneyValue(t.prizeSecond, 'Por anunciar');
       const entry = formatMoneyValue(t.entry, 'Por anunciar');
